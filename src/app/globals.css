@@ -1,0 +1,56 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #F8FAFB;
+  --foreground: #0F172A;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Sidebar deep emerald glow effect from Northline capture */
+.sidebar-glow {
+  background: radial-gradient(
+    circle at 50% 18%,
+    rgba(16, 185, 129, 0.18) 0%,
+    rgba(6, 78, 59, 0.08) 45%,
+    rgba(8, 16, 12, 0) 75%
+  );
+}
+
+.active-nav-glow {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.28) 0%,
+    rgba(5, 150, 105, 0.16) 100%
+  );
+  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
+              0 2px 8px -2px rgba(16, 185, 129, 0.3);
+}
+
+/* Custom discreet scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
