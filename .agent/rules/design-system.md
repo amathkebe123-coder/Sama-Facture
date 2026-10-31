@@ -20,7 +20,7 @@ alwaysApply: true
 | **Sidebar Fond** | `#08100C` | `bg-[#08100C]` | Fond principal de la navigation latérale |
 | **Surface Sombre Élevée** | `#0D1812` / `#09150F` | `bg-[#0D1812]` | Cartes internes sombres (profil utilisateur sidebar, carte alerte Insight) |
 | **Surface Tooltip** | `#0F172A` (95% opacité) | `bg-slate-900/95 backdrop-blur-sm` | Infobulles graphiques flottantes |
-| **Backdrop Modal** | `rgba(0, 0, 0, 0.6)` | `bg-black/60 backdrop-blur-sm` | Voile de fond du tiroir mobile et modales |
+| **Backdrop Modal** | `rgba(0, 0, 0, 0.7)` | `bg-black/70 backdrop-blur-sm` | Voile de fond du tiroir mobile et modales |
 
 ### 1.2 Primaire Vert Émeraude (Identité de Marque)
 | Nuance | Hex | Classe Tailwind | Utilisation |
@@ -54,245 +54,57 @@ alwaysApply: true
 | **Brouillon** (`draft`) | `bg-slate-50` (`#F1F5F9`) | `text-slate-600` (`#475569`) | `border-slate-200/70` | `bg-slate-400` (`#94A3B8`) |
 | **Partielle** (`partial`) | `bg-blue-50` (`#EFF6FF`) | `text-blue-700` (`#1D4ED8`) | `border-blue-200/60` | `bg-blue-500` (`#3B82F6`) |
 
-### 1.5 Canaux d'Encaissement (Afrique de l'Ouest)
-- **Wave** : `#1DC8F3` (Bleu cyan Wave)
-- **Orange Money** : `#FF7900` (Orange officiel OM)
-- **Virement bancaire** : `#10B981` (Vert émeraude)
-- **Espèces** : `#64748B` (Gris ardoise)
-
 ---
 
-## 2. Typographie
+## 2. Typographie & Règle des Écrans Mobiles
 
 ### 2.1 Famille de Police
-Stack moderne système haute performance :
 ```css
 font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 ```
 
-### 2.2 Échelle Typographique & Rôles
-| Rôle | Classes Tailwind | Taille / Line-height | Graisse | Lettrage (Tracking) |
-|---|---|---|---|---|
-| **Titre Page H1** | `text-xl md:text-2xl font-bold tracking-tight text-slate-900` | 20px / 28px (md: 24px / 32px) | Bold (700) | `-0.025em` (`tracking-tight`) |
-| **Titre Section H3** | `text-sm md:text-base font-bold text-slate-900` | 14px / 20px (md: 16px / 24px) | Bold (700) | Normal |
-| **Chiffres KPI** | `text-xl md:text-2xl font-bold tracking-tight tabular-nums` | 20px (md: 24px) | Bold (700) | `tabular-nums` obligatoire |
-| **Labels Catégories** | `text-[11px] font-semibold tracking-wider uppercase` | 11px / 16px | Semibold (600) | `+0.05em` (`tracking-wider`) |
-| **Corps Courant** | `text-xs md:text-sm text-slate-600` | 12px / 16px (md: 14px / 20px) | Normal (400) | Normal |
-| **Sous-titres / Descriptions** | `text-xs text-slate-500` | 12px / 16px | Normal (400) | Normal |
-| **Badges & Pastilles** | `text-[10px] md:text-[11px] font-semibold` | 10px ou 11px | Semibold (600) | Normal |
-| **Touches Clavier (Kbd)** | `text-[10px] font-medium text-slate-400` | 10px | Medium (500) | Normal |
-
+### 2.2 Règle Anti-Zoom Safari iOS sur Formulaires
 > [!IMPORTANT]
-> **Règle des montants financiers** : Tous les montants en FCFA doivent impérativement comporter la classe Tailwind `tabular-nums` afin d'assurer un alignement vertical parfait des chiffres dans les tableaux et les cartes de statistiques.
+> **Règle iOS stricte** : Tout champ `<input>`, `<select>` ou `<textarea>` doit avoir une taille de police d'au moins **16px** (`text-base`) sur mobile pour éviter qu'iOS Safari ne zoome automatiquement la page au focus.
+> Utiliser systématiquement : `text-base sm:text-sm`.
 
 ---
 
-## 3. Espacements, Grilles et Alignements
+## 3. Normes Mobiles & Responsivité Stricte (Mobile-First)
 
-### 3.1 Espacements Internes (Paddings)
-- **Conteneur Principal Page** : `p-4 md:p-8 space-y-6 md:space-y-8 max-w-7xl mx-auto w-full`
-- **Cartes KPI** : `p-5` (20px)
-- **Carte Graphique (Revenue Chart)** : `p-6` (24px)
-- **Carte Widget (Insight / Canaux)** : `p-5` (20px)
-- **Tableau (En-tête & Contrôles)** : `p-5` (20px)
-- **Cellules de Tableau (Desktop)** : `py-3.5 px-4` (14px vertical, 16px horizontal)
-- **Lignes d'en-tête Tableau (`<th>`)** : `py-3 px-4` (12px vertical, 16px horizontal)
-- **Carte Facture Mobile** : `p-4 space-y-2` (16px)
+### 3.1 Interdiction Absolue de Débordement Horizontal
+- Tous les conteneurs racines doivent posséder `max-w-full w-full overflow-x-hidden`.
+- Aucune largeur fixe en pixels (`w-[Xpx]`) ne doit être appliquée sans alternative responsive (`max-w-[85vw]`, `w-full sm:w-[Xpx]`).
+- Les montants chiffrés doivent comporter `tabular-nums` et être protégés contre les retours à la ligne incohérents.
 
-### 3.2 Dimensions & Grilles
-- **Largeur Sidebar Desktop** : `w-[260px]` fixe.
-- **Décalage Contenu Principal** : `lg:pl-[260px]`.
-- **Hauteur Topbar** : `h-16` (64px) fixe sticky.
-- **Grille 4 KPI** : `grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5`.
-- **Grille Médiane** : `grid grid-cols-1 lg:grid-cols-3 gap-6` (Graphique sur `lg:col-span-2`, Widgets sur 1 col).
-- **Largeur Max Dashboard** : `max-w-7xl` (1280px) centré avec `mx-auto`.
+### 3.2 Confort Tactile (Touch Targets)
+- **Zone tactile minimale** : **44 × 44 px** pour tous les boutons d'action au doigt (`min-h-[44px]`).
+- **Suppression du délai tactile** : `touch-action: manipulation;` activé globalement sur `body`.
+- **Safe Areas iOS** : Prise en compte de `env(safe-area-inset-top)` et `env(safe-area-inset-bottom)`.
 
----
+### 3.3 Conversion Systématique des Tableaux en Cartes Mobiles
+> [!IMPORTANT]
+> **Règle des tableaux de données** :
+> Les balises `<table>` sont strictement réservées aux écrans larges (`hidden md:block`).
+> Sur mobile (`< md`), chaque ligne de tableau **doit impérativement** être rendue sous forme de carte empilée (`md:hidden`) avec :
+> 1. En-tête : Référence en gras + Badge statut à droite.
+> 2. Corps : Client et description de la prestation.
+> 3. Bas : Montant en FCFA + Date d'échéance.
+> 4. Actions : Boutons tactiles d'au moins 44px de hauteur (`min-h-[44px]`).
 
-## 4. Bordures et Rayons d'Arrondi (Border-Radius)
-
-### 4.1 Épaisseur et Couleurs de Bordure
-- **Épaisseur standard** : `border` (1px).
-- **Bordures Claires (Cartes/Tableaux)** : `border-slate-100` (état repos), `hover:border-slate-200/80`.
-- **Bordures Sombres (Sidebar/Insight)** : `border-[#15241C]` ou `border-[#173022]`.
-- **Bordures Champs de saisie** : `border-slate-200/80` (focus: `focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/20`).
-
-### 4.2 Échelle des Arrondis (`border-radius`)
-| Type d'élément | Classe Tailwind | Valeur en px |
-|---|---|---|
-| **Grandes Cartes & Tableaux** | `rounded-2xl` | 16px |
-| **Boutons Principaux, Inputs, Items Nav** | `rounded-xl` | 12px |
-| **Logo Marque, Avatars, Conteneurs d'icônes** | `rounded-lg` | 8px |
-| **Badges de compteur sidebar** | `rounded-md` | 6px |
-| **Badges de statut, Pastilles, Boutons ronds** | `rounded-full` | 9999px |
+### 3.4 Comportement par Breakpoint
+| Écran / Largeur | Sidebar | Navigation / Header | KPI | Tableaux |
+|---|---|---|---|---|
+| **Android (360px)** | Tiroir masqué (`-translate-x-full`), max 85vw. | Recherche repliée en icône, bouton "Créer" compact. | 1 colonne pleine largeur. | Cartes tactiles empilées. |
+| **iPhone SE / Mini (375px)** | Idem, fond flouté `backdrop-blur-sm`. | Idem. | 1 colonne. | Cartes tactiles empilées. |
+| **iPhone Standard (390-414px)** | Idem. | Recherche repliée, CTA `+ Créer`. | 1 à 2 colonnes selon contenu. | Cartes tactiles empilées. |
+| **Tablette (768px)** | Masquée sous 1024px (`lg:`). | Recherche étendue, filtres affichés. | 2 colonnes (`sm:grid-cols-2`). | Tableau complet défilable. |
+| **Desktop (≥ 1024px)** | Fixe à gauche `260px` (`lg:translate-x-0`). | Header complet avec raccourci `⌘K`. | 4 colonnes (`lg:grid-cols-4`). | Tableau complet étendu. |
 
 ---
 
-## 5. Ombres, Flous et Effets Visuels
+## 4. Consignes Impératives
 
-### 5.1 Ombres (Box Shadows)
-- **Cartes Blanches** : `shadow-[0_1px_3px_rgba(0,0,0,0.02)]` (ombre imperceptible, effet d'élévation ultra-propre).
-- **Bouton CTA Primaire** : `shadow-sm hover:shadow`.
-- **Bouton Vert Lumineux (WhatsApp / Insight)** : `shadow-[0_0_12px_rgba(52,211,153,0.3)]`.
-- **Badge Logo Marque** : `shadow-[0_0_15px_rgba(16,185,129,0.4)]`.
-- **Barre Active Graphique** : `shadow-[0_0_16px_rgba(16,185,129,0.35)]`.
-- **Tiroir Mobile Ouvert** : `shadow-2xl`.
-
-### 5.2 Dégradés & Effets Lumineux Signature
-- **Halo Vert Sidebar Sombre (`.sidebar-glow`)** :
-  ```css
-  background: radial-gradient(
-    circle at 50% 18%,
-    rgba(16, 185, 129, 0.18) 0%,
-    rgba(6, 78, 59, 0.08) 45%,
-    rgba(8, 16, 12, 0) 75%
-  );
-  ```
-- **Onglet Actif Sidebar (`.active-nav-glow`)** :
-  ```css
-  background: linear-gradient(
-    135deg,
-    rgba(16, 185, 129, 0.28) 0%,
-    rgba(5, 150, 105, 0.16) 100%
-  );
-  box-shadow: inset 0 1px 1px 0 rgba(255, 255, 255, 0.12),
-              0 2px 8px -2px rgba(16, 185, 129, 0.3);
-  ```
-- **Flou d'Arrière-plan Topbar** : `bg-white/80 backdrop-blur-md`.
-
----
-
-## 6. Animations et Transitions
-
-| Élément | Propriété | Durée / Easing | Classes Tailwind |
-|---|---|---|---|
-| **Hover interactif standard** | Couleur / Fond / Bordure | 150ms | `transition-all duration-150` ou `transition-colors` |
-| **Ouverture Drawer Mobile** | Translation X | 200ms ease-in-out | `transition-transform duration-200 ease-in-out` |
-| **Barres du graphique & jauges**| Hauteur / Largeur | 300ms | `transition-all duration-300` |
-| **Hover Lignes de Tableau** | Fond | 150ms | `hover:bg-slate-50/80 transition-colors` |
-| **Hover Liens Sidebar Inactifs**| Couleur & Fond | 150ms | `hover:text-slate-200 hover:bg-emerald-950/20` |
-
----
-
-## 7. Composants de Base : Structures et Classes Précises
-
-### 7.1 Bouton Primaire CTA (ex: `+ Nouvelle facture`)
-```tsx
-<button
-  type="button"
-  className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs md:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl shadow-sm hover:shadow transition-all"
->
-  <Plus className="w-4 h-4" />
-  <span>Nouvelle facture</span>
-</button>
-```
-
-### 7.2 Bouton Secondaire / Sélecteur Outline
-```tsx
-<button
-  type="button"
-  className="inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200/80 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
->
-  <Calendar className="w-3.5 h-3.5 text-slate-400" />
-  <span>30 derniers jours</span>
-</button>
-```
-
-### 7.3 Bouton d'Action Vert Lumineux (ex: Relance WhatsApp)
-```tsx
-<button
-  type="button"
-  className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs font-semibold text-slate-900 bg-emerald-400 hover:bg-emerald-300 active:bg-emerald-500 rounded-xl transition-colors shadow-[0_0_12px_rgba(52,211,153,0.3)]"
->
-  <MessageSquare className="w-3.5 h-3.5" />
-  <span>Relancer via WhatsApp</span>
-  <ArrowRight className="w-3.5 h-3.5" />
-</button>
-```
-
-### 7.4 Bouton Icône (Actions rapides / Options)
-```tsx
-<button
-  type="button"
-  className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-  title="Action"
->
-  <Eye className="w-3.5 h-3.5" />
-</button>
-```
-
-### 7.5 Champ de Saisie (Input avec icône et raccourci)
-```tsx
-<div className="relative flex-1">
-  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-  <input
-    type="text"
-    placeholder="Rechercher..."
-    className="w-full pl-9 pr-12 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800 placeholder-slate-400 transition-all"
-  />
-  <kbd className="hidden sm:inline-flex absolute right-2.5 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 bg-white border border-slate-200 rounded">
-    ⌘K
-  </kbd>
-</div>
-```
-
-### 7.6 Badge de Statut Facture
-```tsx
-<span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold border ${statusConfig.badgeClass}`}>
-  <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dotClass}`} />
-  {statusConfig.label}
-</span>
-```
-
-### 7.7 Carte Blanche Standard (Surface)
-```tsx
-<div className="bg-white border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-5">
-  {/* Contenu */}
-</div>
-```
-
----
-
-## 8. Responsivité & Comportement Multi-écrans
-
-| Écran / Breakpoint | Sidebar | Tableaux | Disposition Grilles |
-|---|---|---|---|
-| **Mobile (`< 768px`)** | Masquée (`-translate-x-full`), tiroir latéral `w-[260px]` via bouton hamburger topbar. | Remplacé par une liste de cartes tactiles (`divide-y divide-slate-100`). | 1 colonne pour les KPI et les sections. |
-| **Tablette (`768px - 1023px`)** | Masquée sous 1024px (`lg:`), même tiroir mobile. | Tableau complet visible avec défilement horizontal (`overflow-x-auto`). | KPI en 2 colonnes (`sm:grid-cols-2`). |
-| **Desktop (`>= 1024px`)** | Fixe à gauche `w-[260px]`, offset contenu `lg:pl-[260px]`. | Tableau complet étendu. | KPI en 4 colonnes, grille médiane 3 colonnes (`2 col` chart + `1 col` widgets). |
-
----
-
-## 9. Identité Visuelle Générale
-
-- **Ambiance** : B2B SaaS financier haut de gamme (inspiration directe Dribbble / Odama Northline).
-- **Dualité visuelle maîtrisée** : Sidebar sombre profond et halo émeraude néon (structure, élégance, sérieux financier) face à un espace de travail ultra-lumineux et épuré (`#F8FAFB` / blanc) garantissant une lisibilité maximale pour les chiffres.
-- **Micro-détails soignés** : Bordures légères 1px plutôt que de lourdes ombres, chiffres alignés en police tabulaire, badges discrets aux teintes pastel et puces colorées.
-
----
-
-## 10. Consignes Impératives pour les Développements Futurs
-
-1. **Priorité absolue à la réutilisation** : Réutiliser impérativement les composants, classes Tailwind et variables CSS documentés dans cette règle plutôt que d'en recréer.
-2. **Interdiction de divergence** : Ne jamais introduire de couleur arbitraire (ex: un nouveau vert ou un autre gris), de nouvelle police, de nouveau rayon d'arrondi (`rounded-*`) ou d'animation sans accord explicite préalable.
-3. **Extension du Design System** : Si un nouveau besoin d'interface n'est pas couvert par ce document (ex: modale de confirmation, combobox client, stepper de facture), **proposer l'ajout au Design System avant toute implémentation**.
-
----
-
-## 11. Incohérences Détectées dans le Code Actuel & Recommandations de Standardisation
-
-Lors de l'analyse du code actuel, les légères variations suivantes ont été relevées. Le code actuel n'a pas été modifié, mais voici les valeurs à retenir pour harmoniser les futures pages :
-
-1. **Bordures des cartes claires** :
-   - *Observation* : `border-slate-100/90` dans `StatCards.tsx` vs `border-slate-100` dans `RevenueChart.tsx` et `RecentInvoicesTable.tsx`.
-   - *Règle retenue* : Standardiser sur **`border-slate-100`** sans opacité fractionnée.
-2. **Arrondi des boutons d'actions secondaires** :
-   - *Observation* : `rounded-xl` sur la topbar et la table header vs `rounded-lg` sur les boutons PDF/WhatsApp de la vue mobile dans `RecentInvoicesTable.tsx`.
-   - *Règle retenue* : Standardiser tous les boutons d'action sur **`rounded-xl`** pour une cohérence géométrique parfaite.
-3. **Bordures et fonds des surfaces sombres** :
-   - *Observation* : Bordure `#15241C` (sidebar header/footer), `#16291F` (profil) et `#173022` (InsightCard).
-   - *Règle retenue* : Retenir **`#15241C`** comme bordure sombre standard, et **`#0D1812`** pour les surfaces de cartes sombres internes.
-4. **Padding des boutons icônes** :
-   - *Observation* : `p-1` (sélecteur organisation sidebar), `p-1.5` (actions tableau), `p-2` (icônes topbar).
-   - *Règle retenue* : Conserver `p-2` pour la Topbar (zone tactile 40x40px), et `p-1.5` pour les actions compactes dans les tableaux.
-
+1. **Test systématique sur 360px et 414px** : Avant de valider une nouvelle vue, vérifier qu'aucun défilement horizontal n'apparaît.
+2. **Priorité aux composants AppShell et Topbar existants** : Réutiliser la structure mise en place.
+3. **Respect de l'esthétique Dribbble / Payz / Northline** : Garder les arrondis `rounded-2xl`, les bordures `border-slate-100`, les micro-ombres et le vert émeraude comme fil conducteur sur mobile comme sur desktop.

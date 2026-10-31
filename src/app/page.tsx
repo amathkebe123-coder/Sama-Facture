@@ -27,7 +27,7 @@ export default function DashboardPage() {
   const capitalizedDate =
     todayFormatted.charAt(0).toUpperCase() + todayFormatted.slice(1);
 
-  // Calcul dynamique des statistiques basé sur les factures en temps réel
+  // Calcul dynamique des statistiques
   const nonDraftInvoices = invoices.filter((i) => i.status !== "draft");
   const totalInvoiced = nonDraftInvoices.reduce((acc, curr) => acc + curr.total, 0);
   const totalCollected = invoices
@@ -70,17 +70,17 @@ export default function DashboardPage() {
   return (
     <AppShell>
       {/* Welcome greeting banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-        <div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 w-full">
+        <div className="min-w-0">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-slate-900 truncate">
             Bonjour, Awa ! 👋
           </h1>
-          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5 truncate">
             Prête à suivre les encaissements de votre entreprise ?
           </p>
         </div>
-        <div className="text-left sm:text-right">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-100/80">
+        <div className="text-left sm:text-right shrink-0">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-medium text-emerald-800 bg-emerald-50 border border-emerald-100/80">
             {capitalizedDate}
           </span>
         </div>
@@ -90,21 +90,23 @@ export default function DashboardPage() {
       <StatCards stats={dynamicStats} />
 
       {/* Mid Section: Revenue Chart & Insights / Channels */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
         {/* Left: 2 Columns for Revenue Chart */}
-        <div className="lg:col-span-2">
+        <div className="lg:col-span-2 w-full min-w-0">
           <RevenueChart data={MOCK_REVENUE_TREND} />
         </div>
 
         {/* Right: 1 Column for Insight & Payment Channels */}
-        <div className="space-y-6 flex flex-col justify-between">
+        <div className="space-y-4 sm:space-y-6 flex flex-col justify-between w-full min-w-0">
           <InsightCard />
           <PaymentChannels />
         </div>
       </div>
 
       {/* Bottom Section: Recent Invoices Table */}
-      <RecentInvoicesTable invoices={formattedRecentInvoices} />
+      <div className="w-full min-w-0">
+        <RecentInvoicesTable invoices={formattedRecentInvoices} />
+      </div>
     </AppShell>
   );
 }

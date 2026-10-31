@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState } from "react";
-import Link from "next/link";
 import {
   Users,
   Plus,
@@ -11,9 +10,8 @@ import {
   MapPin,
   Edit,
   Trash2,
-  FileText,
-  AlertTriangle,
   Building2,
+  AlertTriangle,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { useInvoices } from "@/context/InvoiceContext";
@@ -26,21 +24,17 @@ export default function ClientsPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Modal Ajout / Modification
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingClient, setEditingClient] = useState<Client | null>(null);
 
-  // Form Fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("+221 ");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("Dakar");
 
-  // Modal Suppression
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
 
-  // Filtrage
   const filteredClients = clients.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
     return (
@@ -106,25 +100,25 @@ export default function ClientsPage() {
   return (
     <AppShell>
       {/* Top Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl md:text-2xl font-bold tracking-tight text-slate-900">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold tracking-tight text-slate-900">
               Clients
             </h1>
-            <span className="px-2.5 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
+            <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
               {clients.length} clients
             </span>
           </div>
-          <p className="text-xs md:text-sm text-slate-500 mt-0.5">
-            Répertoire commercial, coordonnées et historique de facturation
+          <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
+            Répertoire commercial et coordonnées
           </p>
         </div>
 
         <button
           type="button"
           onClick={handleOpenAddModal}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-sm hover:shadow shrink-0"
+          className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-sm shrink-0 min-h-[44px]"
         >
           <Plus className="w-4 h-4" />
           <span>Nouveau client</span>
@@ -132,23 +126,23 @@ export default function ClientsPage() {
       </div>
 
       {/* Search Bar */}
-      <div className="bg-white p-3.5 border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3">
-        <div className="relative w-full md:w-96">
+      <div className="bg-white p-3 sm:p-4 border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex items-center justify-between gap-3 w-full">
+        <div className="relative w-full">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
             placeholder="Rechercher par nom, ville, email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-1.5 text-xs md:text-sm bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 text-slate-800"
+            className="w-full pl-9 pr-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800 min-h-[44px]"
           />
         </div>
       </div>
 
       {/* Clients Table Card */}
-      <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden">
+      <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] overflow-hidden w-full">
         {filteredClients.length === 0 ? (
-          <div className="py-16 text-center">
+          <div className="py-14 text-center px-4">
             <div className="w-12 h-12 mx-auto mb-3 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400">
               <Users className="w-6 h-6" />
             </div>
@@ -156,13 +150,13 @@ export default function ClientsPage() {
               Aucun client trouvé
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-              Aucun client ne correspond à votre recherche. Ajoutez un nouveau client en cliquant ci-dessus.
+              Ajoutez un nouveau client avec le bouton ci-dessus.
             </p>
           </div>
         ) : (
           <>
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
+            {/* Desktop Table View (>= 768px) */}
+            <div className="hidden md:block overflow-x-auto w-full">
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50/60 text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
@@ -235,16 +229,16 @@ export default function ClientsPage() {
                             <button
                               type="button"
                               onClick={() => handleOpenEditModal(client)}
-                              className="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
-                              title="Modifier le client"
+                              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+                              title="Modifier"
                             >
                               <Edit className="w-3.5 h-3.5" />
                             </button>
                             <button
                               type="button"
                               onClick={() => setDeletingClient(client)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                              title="Supprimer le client"
+                              className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center"
+                              title="Supprimer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
                             </button>
@@ -257,7 +251,7 @@ export default function ClientsPage() {
               </table>
             </div>
 
-            {/* Mobile View (< 768px) */}
+            {/* Mobile View (< 768px) - 100% Mobile First */}
             <div className="md:hidden divide-y divide-slate-100">
               {filteredClients.map((client) => {
                 const clientInvoices = invoices.filter(
@@ -269,54 +263,52 @@ export default function ClientsPage() {
                 );
 
                 return (
-                  <div key={client.id} className="p-4 space-y-2.5">
+                  <div key={client.id} className="p-3.5 sm:p-4 space-y-2.5">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs uppercase">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold text-xs uppercase shrink-0">
                           {client.name.substring(0, 2)}
                         </div>
-                        <span className="font-bold text-sm text-slate-900">
+                        <span className="font-bold text-sm text-slate-900 truncate">
                           {client.name}
                         </span>
                       </div>
-                      <span className="text-xs font-bold text-slate-900 tabular-nums">
+                      <span className="text-xs font-bold text-slate-900 tabular-nums shrink-0">
                         {formatFCFA(totalInv || client.totalInvoiced || 0)}
                       </span>
                     </div>
 
                     <div className="text-xs text-slate-500 space-y-1">
-                      <p className="flex items-center gap-1.5">
-                        <Mail className="w-3 h-3 text-slate-400" />
-                        <span>{client.email}</span>
+                      <p className="flex items-center gap-1.5 truncate">
+                        <Mail className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span className="truncate">{client.email}</span>
                       </p>
                       <p className="flex items-center gap-1.5">
-                        <Phone className="w-3 h-3 text-slate-400" />
+                        <Phone className="w-3.5 h-3.5 text-slate-400 shrink-0" />
                         <span>{client.phone}</span>
                       </p>
                       <p className="flex items-center gap-1.5">
-                        <MapPin className="w-3 h-3 text-slate-400" />
-                        <span>
-                          {client.city} • {client.address}
-                        </span>
+                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>{client.city}</span>
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-50">
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-50">
                       <button
                         type="button"
                         onClick={() => handleOpenEditModal(client)}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs text-slate-600 bg-slate-100 rounded-lg font-medium"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 active:bg-slate-200 rounded-xl min-h-[44px]"
                       >
-                        <Edit className="w-3 h-3" />
-                        Modifier
+                        <Edit className="w-3.5 h-3.5 text-slate-500" />
+                        <span>Modifier</span>
                       </button>
                       <button
                         type="button"
                         onClick={() => setDeletingClient(client)}
-                        className="flex items-center gap-1 px-2.5 py-1 text-xs text-rose-600 bg-rose-50 rounded-lg font-medium"
+                        className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-600 bg-rose-50 active:bg-rose-100 rounded-xl min-h-[44px]"
                       >
-                        <Trash2 className="w-3 h-3" />
-                        Supprimer
+                        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+                        <span>Supprimer</span>
                       </button>
                     </div>
                   </div>
@@ -327,23 +319,23 @@ export default function ClientsPage() {
         )}
       </div>
 
-      {/* Modal Ajout / Modification Client */}
+      {/* Modal Ajout / Modification Client (Bottom sheet on mobile) */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full space-y-5 shadow-2xl border border-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm safe-bottom">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <Building2 className="w-4 h-4 text-emerald-600" />
                 <span>
-                  {editingClient ? "Modifier le client" : "Ajouter un client"}
+                  {editingClient ? "Modifier le client" : "Nouveau client"}
                 </span>
               </h3>
             </div>
 
-            <form onSubmit={handleSubmitForm} className="space-y-4">
+            <form onSubmit={handleSubmitForm} className="space-y-3.5">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Nom de l&apos;entreprise ou du client *
+                  Nom ou Entreprise *
                 </label>
                 <input
                   type="text"
@@ -351,7 +343,7 @@ export default function ClientsPage() {
                   placeholder="Ex: Baobab Digital SARL"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="w-full px-3 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
                 />
               </div>
 
@@ -362,10 +354,10 @@ export default function ClientsPage() {
                 <input
                   type="email"
                   required
-                  placeholder="compta@entreprise.sn"
+                  placeholder="contact@entreprise.sn"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full px-3 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
                 />
               </div>
 
@@ -378,11 +370,11 @@ export default function ClientsPage() {
                   placeholder="+221 77 000 00 00"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="w-full px-3 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                  className="w-full px-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
                     Ville
@@ -392,7 +384,7 @@ export default function ClientsPage() {
                     placeholder="Dakar, Thiès..."
                     value={city}
                     onChange={(e) => setCity(e.target.value)}
-                    className="w-full px-3 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    className="w-full px-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
                   />
                 </div>
                 <div>
@@ -401,27 +393,27 @@ export default function ClientsPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="Quartier, rue..."
+                    placeholder="Quartier..."
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-3 py-2 text-xs md:text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                    className="w-full px-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl min-h-[44px]"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm"
+                  className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl min-h-[44px] shadow-sm"
                 >
-                  {editingClient ? "Mettre à jour" : "Ajouter le client"}
+                  {editingClient ? "Mettre à jour" : "Ajouter"}
                 </button>
               </div>
             </form>
@@ -431,37 +423,37 @@ export default function ClientsPage() {
 
       {/* Modal Confirmation de Suppression Client */}
       {deletingClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4 shadow-2xl border border-slate-100">
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm safe-bottom">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 max-w-sm w-full space-y-4 shadow-2xl border border-slate-100">
+            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5" />
             </div>
             <div>
               <h3 className="text-base font-bold text-slate-900">
                 Supprimer le client ?
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
                 Êtes-vous sûr de vouloir supprimer{" "}
-                <span className="font-semibold text-slate-800">
+                <span className="font-bold text-slate-800">
                   {deletingClient.name}
                 </span>{" "}
-                ? Les factures associées resteront enregistrées.
+                ?
               </p>
             </div>
             <div className="flex items-center justify-end gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setDeletingClient(null)}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl min-h-[44px]"
               >
                 Annuler
               </button>
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                className="px-4 py-2 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl transition-colors shadow-sm"
+                className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-white bg-rose-600 hover:bg-rose-700 rounded-xl min-h-[44px] shadow-sm"
               >
-                Oui, supprimer
+                Supprimer
               </button>
             </div>
           </div>
@@ -470,4 +462,3 @@ export default function ClientsPage() {
     </AppShell>
   );
 }
-
