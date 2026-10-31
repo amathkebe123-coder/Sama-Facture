@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 import { Search, Bell, Plus, Menu, Calendar, SlidersHorizontal } from "lucide-react";
 
 interface TopbarProps {
@@ -65,16 +66,15 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
         </button>
 
         {/* Primary CTA: Nouvelle facture */}
-        <button
-          type="button"
+        <Link
+          href="/factures/nouvelle"
           className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs md:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl shadow-sm hover:shadow transition-all"
         >
           <Plus className="w-4 h-4" />
           <span className="hidden sm:inline">Nouvelle facture</span>
           <span className="sm:hidden">Créer</span>
-        </button>
+        </Link>
       </div>
     </header>
   );
 }
-

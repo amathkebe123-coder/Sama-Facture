@@ -295,3 +295,4 @@ Lors de l'analyse du code actuel, les légères variations suivantes ont été r
 4. **Padding des boutons icônes** :
    - *Observation* : `p-1` (sélecteur organisation sidebar), `p-1.5` (actions tableau), `p-2` (icônes topbar).
    - *Règle retenue* : Conserver `p-2` pour la Topbar (zone tactile 40x40px), et `p-1.5` pour les actions compactes dans les tableaux.
+

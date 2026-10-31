@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { InvoiceProvider } from "@/context/InvoiceContext";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="antialiased">
       <body className="min-h-screen bg-[#F8FAFB] text-slate-900 font-sans">
-        {children}
+        <InvoiceProvider>{children}</InvoiceProvider>
       </body>
     </html>
   );

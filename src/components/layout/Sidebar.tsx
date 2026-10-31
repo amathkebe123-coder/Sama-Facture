@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useInvoices } from "@/context/InvoiceContext";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -25,10 +26,11 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { invoices } = useInvoices();
 
   const mainNavItems = [
     { label: "Vue d'ensemble", href: "/", icon: LayoutDashboard },
-    { label: "Factures", href: "/factures", icon: Receipt, badge: "42" },
+    { label: "Factures", href: "/factures", icon: Receipt, badge: String(invoices.length) },
     { label: "Clients", href: "/clients", icon: Users },
     { label: "Produits & Services", href: "/produits", icon: Package },
   ];
