@@ -108,3 +108,124 @@ font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "He
 1. **Test systématique sur 360px et 414px** : Avant de valider une nouvelle vue, vérifier qu'aucun défilement horizontal n'apparaît.
 2. **Priorité aux composants AppShell et Topbar existants** : Réutiliser la structure mise en place.
 3. **Respect de l'esthétique Dribbble / Payz / Northline** : Garder les arrondis `rounded-2xl`, les bordures `border-slate-100`, les micro-ombres et le vert émeraude comme fil conducteur sur mobile comme sur desktop.
+
+---
+
+## 5. Composant Sélecteur de Date & Calendrier (DatePicker)
+
+> **Composant officiel** : `src/components/ui/DatePicker.tsx`  
+> Basé sur l'ergonomie du modèle Radian-OS adapté strictement au design system Sama Facture (vert émeraude `#059669` au lieu du bleu).
+
+### 5.1 Anatomie du Déclencheur (Champ de Saisie)
+- **Label** : au-dessus, `text-xs font-semibold text-slate-700 mb-1.5`.
+- **Conteneur** : `bg-white border rounded-xl min-h-[44px] (ou min-h-[38px] en size="sm")`.
+- **Icône gauche** : `Calendar` (Lucide), `w-4 h-4 text-slate-400` (passe en `text-emerald-600` quand le calendrier est ouvert).
+- **Date affichée** : texte centré/aligné en français complet (ex. *"8 février 2026"*), `font-medium text-slate-900` (ou placeholder `text-slate-400`).
+- **Icône droite** : `ChevronsUpDown` (Lucide), `w-4 h-4 text-slate-400`.
+- **État actif/ouvert** : bordure `border-emerald-600` et anneau subtil `ring-2 ring-emerald-500/20 shadow-sm`.
+
+### 5.2 Panneau Popover du Calendrier
+- **Conteneur** : `bg-white border border-slate-100 rounded-2xl p-4 shadow-[0_12px_32px_-4px_rgba(0,0,0,0.12),0_4px_12px_-2px_rgba(0,0,0,0.04)]`.
+- **Navigation mois** : 
+  - Boutons précédent / suivant dans de petits carrés arrondis : `w-8 h-8 rounded-lg border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50`.
+  - Mois et année centrés en gras : `font-bold text-sm sm:text-base text-slate-900 capitalize` (ex. *"Février 2026"*).
+- **Jours de la semaine** :
+  - Ordre français débutant le **Lundi** : `Lu Ma Me Je Ve Sa Di`.
+  - Style : `text-[11px] sm:text-xs font-semibold text-slate-400`.
+- **Grille des jours (7 colonnes)** :
+  - **Jours hors mois courant** (précédent/suivant) : estompés en `text-slate-300 hover:bg-slate-50 hover:text-slate-600 rounded-xl`.
+  - **Aujourd'hui** : fond gris doux `bg-slate-100/90 font-bold text-slate-900 rounded-xl` avec un petit point centré en dessous (`w-1 h-1 rounded-full bg-slate-500`).
+  - **Jour sélectionné** : vert émeraude vibrant `bg-emerald-600 text-white font-bold rounded-xl shadow-sm hover:bg-emerald-700`.
+  - **Survol (Hover)** : transition fluide `hover:bg-emerald-600 hover:text-white transition-all duration-150 rounded-xl`.
+
+### 5.3 Adaptation Mobile Tactile & Clavier
+- **Backdrop semi-transparent** sur mobile (`fixed inset-0 bg-black/40 backdrop-blur-[2px] z-40 sm:hidden`) pour focaliser l'attention et fermer au tap.
+- **Positionnement intelligent** : centré en bas sur mobile (`fixed bottom-4 left-1/2 -translate-x-1/2 w-[92vw] max-w-[340px]`), popover sous le champ sur desktop (`sm:absolute sm:top-[calc(100%+6px)]`).
+- **Touch targets** : chaque cellule jour dispose d'une taille confortable (`h-9 sm:h-8 min-w-[36px]`).
+- **Interactions clavier & accessibilité** :
+  - Fermeture immédiate avec la touche `Échap` ou par clic extérieur.
+  - Flèches directionnelles (`←` `→` `↑` `↓`) pour naviguer jour par jour dans le mois.
+  - Touche `Entrée` ou `Espace` pour valider la sélection.
+
+---
+
+## 6. Standard de Dialogue & Confirmation Unifié (FeedbackModal)
+
+> **Composant officiel unique** : `src/components/ui/FeedbackModal.tsx`  
+> Remplace définitivement tous les bandeaux de notification en haut de page. Toute information, succès, alerte ou confirmation s'affiche dans cette boîte de dialogue modale centrée.
+
+### 6.1 Anatomie & Structure Visuelle de la Fenêtre
+Basée sur le modèle officiel de Sama Facture (conforme à la capture de référence) :
+
+1. **Disposition centrée & Arrière-plan assombri** :
+   - Voile d'arrière-plan : `fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 safe-bottom`
+   - Carte compacte : `bg-white rounded-3xl p-6 sm:p-7 max-w-[400px] w-full shadow-[0_20px_50px_rgba(0,0,0,0.18)] border border-slate-100 relative animate-in zoom-in-95 duration-150`
+
+2. **Bouton Fermer "X" en haut à droite** :
+   - Position : `absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors p-1.5 rounded-lg hover:bg-slate-50`
+   - Zone tactile : accessible et réactif au tap sur mobile.
+
+3. **Pastille d'icône centrée en haut** :
+   - Conteneur circulaire de `w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-4`
+   - **Variante Succès (`success`)** : Coche ✓ (`Check` Lucide), `bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/60 border border-emerald-200/80`
+   - **Variante Information (`info`)** : "i" (`Info` Lucide), `bg-slate-100 text-slate-600 ring-8 ring-slate-100/60 border border-slate-200`
+   - **Variante Erreur (`error`)** : Avertissement (`AlertTriangle` Lucide), `bg-rose-50 text-rose-600 ring-8 ring-rose-50/60 border border-rose-200`
+   - **Variante Confirmation (`confirm`)** : Flèche de synchronisation (`RefreshCw` Lucide), `bg-emerald-50 text-emerald-600 ring-8 ring-emerald-50/60 border border-emerald-200/80`
+
+4. **Titre centré en gras** :
+   - `text-base sm:text-lg font-bold text-slate-900 text-center tracking-tight` (ex. *"Paramètres mis à jour"*, *"Cet élément est déjà enregistré"*, *"Aucune modification"*).
+
+5. **Texte d'explication centré** :
+   - `text-xs sm:text-sm text-slate-500 text-center leading-relaxed mt-1.5` sur 1 ou 2 lignes (ex. *"Les informations de votre entreprise ont bien été enregistrées. Elles apparaîtront sur vos prochaines factures."*).
+
+6. **Bouton d'Action Inférieur** :
+   - **Notifications standard (Succès, Info, Erreur)** : bouton unique **"Fermer"** sur toute la largeur de la fenêtre (`w-full min-h-[44px] bg-slate-900 hover:bg-slate-800 text-white font-semibold text-sm rounded-xl transition-all shadow-sm active:scale-[0.99]`). La teinte est le bleu nuit / ardoise foncé identique à l'onglet actif.
+   - **Boîte de confirmation (`confirm`)** : deux boutons côte à côte (`grid grid-cols-2 gap-3 pt-2`) :
+     - Secondaire : *"Annuler"* (`bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold min-h-[44px] rounded-xl`)
+     - Principal : *"Mettre à jour"* (`bg-emerald-600 hover:bg-emerald-700 text-white font-semibold min-h-[44px] rounded-xl shadow-sm`)
+
+### 6.2 Règles de Comportement & Accessibilité
+- **Pas de fermeture automatique** : La fenêtre ne doit **jamais** disparaître d'elle-même (`aucun setTimeout`). L'utilisateur doit la fermer explicitement.
+- **Modes de fermeture** :
+  1. Clic sur le bouton "Fermer"
+  2. Clic sur la croix "X"
+  3. Clic sur le voile d'arrière-plan (`backdrop`)
+  4. Pression de la touche `Échap` (Escape)
+- **Bloque le défilement** : Dès l'ouverture, `document.body.style.overflow = "hidden"` empêche tout défilement en arrière-plan.
+- **Zéro bandeau de page** : Aucun composant ne doit afficher de message sous forme de bandeau ou bandeau flash poussant le contenu de page. Tout retour passe obligatoirement par `FeedbackModal`.
+
+### 6.3 Cycle de Sauvegarde Anti-Doublon avec FeedbackModal
+1. **1er Enregistrement** : Création normale + ouverture de `FeedbackModal(variant="success")`.
+2. **2e Clic SANS changement** : Aucune création + ouverture de `FeedbackModal(variant="info", title="Aucune modification")`.
+3. **2e Clic AVEC changement** : Aucune création directe + ouverture de `FeedbackModal(variant="confirm", title="Cet élément est déjà enregistré")`.
+   - Clic *"Mettre à jour"* -> modification en place + ouverture de `FeedbackModal(variant="success", title="Modifications enregistrées")`.
+   - Clic *"Annuler"* -> fermeture sans modification.
+
+---
+
+## 7. Standard de Génération & Téléchargement de Factures PDF
+
+> **Module officiel unique** : `src/lib/pdf-generator.ts`  
+> Génération vectorielle native ultra-rapide au format standard A4 (595.28 × 841.89 pt), certifiée ISO PDF, compatible ordinateurs, Android et iOS Safari sans dépendance externe.
+
+### 7.1 Règles de Présentation & Contenu du Document PDF
+1. **En-tête de marque** :
+   - Raison sociale, NINEA, RCCM, adresse du siège et téléphone Wave/Orange Money synchronisés en temps réel avec les réglages de la page [Paramètres](file:///c:/Users/LENOVO/Documents/Sama%20Facture/src/app/parametres/page.tsx).
+   - Titre "FACTURE", numéro séquentiel (ex. `FAC-2026-0042`), dates d'émission et d'échéance, badge de statut (`PAYÉE`, `ENVOYÉE`, `EN RETARD`, `BROUILLON`).
+2. **Bloc Client** ("FACTURÉ À") :
+   - Nom complet du client, adresse email, adresse postale / ville, numéro de téléphone et canal d'encaissement favori.
+3. **Tableau des prestations** :
+   - En-tête sombre ardoise (`#0F172A`), lignes alternées avec désignation, quantité, prix unitaire HT et total HT en FCFA.
+4. **Totaux financiers réglementaires** :
+   - Sous-total HT, TVA sénégalaise 18% et Total TTC mis en avant dans un cartouche vert émeraude (`#059669`).
+5. **Règlements & Mentions légales** :
+   - Coordonnées de paiement Wave, Orange Money, RIB bancaire et espèces.
+   - Mentions légales du Code Général des Impôts du Sénégal en pied de page.
+
+### 7.2 Emplacements Stricts des Boutons de Téléchargement
+- **Fenêtre de succès (`FeedbackModal`)** : Bouton vert émeraude *"Télécharger la facture"* disposé directement au-dessus du bouton *"Fermer"*.
+- **Page de détail / modification de facture (`/factures/[id]`)** : Bouton *"Télécharger PDF"* dans la barre d'actions supérieure.
+- **Formulaire de nouvelle facture (`/factures/nouvelle`)** : N'apparaît **qu'une fois la facture enregistrée** (jamais avant le premier enregistrement).
+- **Liste des factures & Dashboard** : L'icône de téléchargement dans la colonne "Actions" déclenche directement le téléchargement du PDF de la facture concernée avec indicateur de chargement (`RefreshCw`) et désactivation anti-double clic.
+- **Nom du fichier** : strictement `${invoice.invoiceNumber}.pdf` (ex. `FAC-2026-0042.pdf`).
+- **Gestion des erreurs** : toute anomalie déclenche la modale d'erreur du design system (*"Échec du téléchargement"*).

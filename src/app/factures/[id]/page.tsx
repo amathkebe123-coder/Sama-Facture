@@ -13,12 +13,17 @@ import {
   Mail,
   Phone,
   AlertTriangle,
+  Download,
+  RefreshCw,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
 import { useInvoices } from "@/context/InvoiceContext";
 import { formatFCFA } from "@/lib/money";
 import { getInvoiceStatusConfig, InvoiceStatus } from "@/lib/invoice-status";
 import { formatDateFr } from "@/lib/data/fixtures";
+import { downloadInvoicePdf } from "@/lib/pdf-generator";
 
 export default function InvoiceDetailPage() {
   const params = useParams();
@@ -33,6 +38,42 @@ export default function InvoiceDetailPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editNotes, setEditNotes] = useState(invoice?.notes || "");
   const [editDueDate, setEditDueDate] = useState(invoice?.dueDate || "");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloadingPdf, setIsDownloadingPdf] = useState(false);
+
+  // Boîte de dialogue centrée (modale unique officielle)
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    variant: FeedbackModalVariant;
+    title: string;
+    description: string;
+  }>({
+    isOpen: false,
+    variant: "success",
+    title: "",
+    description: "",
+  });
+
+  const handleDownloadPdf = async () => {
+    if (!invoice) return;
+    setIsDownloadingPdf(true);
+    try {
+      // Toujours récupérer la dernière version en date depuis le store
+      const latest = getInvoice(invoice.id) || invoice;
+      await downloadInvoicePdf(latest);
+    } catch (err) {
+      console.error("Erreur téléchargement PDF:", err);
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Échec du téléchargement",
+        description:
+          "Une erreur est survenue lors de la génération du fichier PDF. Veuillez réessayer.",
+      });
+    } finally {
+      setIsDownloadingPdf(false);
+    }
+  };
 
   if (!invoice) {
     return (
@@ -60,22 +101,85 @@ export default function InvoiceDetailPage() {
 
   const statusCfg = getInvoiceStatusConfig(invoice.status);
 
-  const handleStatusChange = (newStatus: InvoiceStatus) => {
-    updateInvoiceStatus(invoice.id, newStatus);
+  const handleStatusChange = async (newStatus: InvoiceStatus) => {
+    try {
+      await updateInvoiceStatus(invoice.id, newStatus);
+    } catch (err: any) {
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Erreur de statut",
+        description: err?.message || "Impossible de mettre à jour le statut dans Supabase.",
+      });
+    }
   };
 
-  const handleDeleteConfirm = () => {
-    deleteInvoice(invoice.id);
-    setIsDeleteModalOpen(false);
-    router.push("/factures");
+  const handleDeleteConfirm = async () => {
+    try {
+      await deleteInvoice(invoice.id);
+      setIsDeleteModalOpen(false);
+      router.push("/factures");
+    } catch (err: any) {
+      setIsDeleteModalOpen(false);
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Erreur de suppression",
+        description: err?.message || "Impossible de supprimer la facture dans Supabase.",
+      });
+    }
   };
 
   const handleSaveEdit = () => {
-    updateInvoice(invoice.id, {
-      notes: editNotes,
-      dueDate: editDueDate,
+    // Vérifier si des modifications ont été apportées
+    const hasChanged =
+      editNotes.trim() !== (invoice.notes || "").trim() ||
+      editDueDate !== invoice.dueDate;
+
+    if (!hasChanged) {
+      setDialogState({
+        isOpen: true,
+        variant: "info",
+        title: "Aucune modification",
+        description:
+          "Vous n'avez modifié aucune information sur cette facture depuis le dernier enregistrement.",
+      });
+      return;
+    }
+
+    // Ouvrir la boîte de dialogue de confirmation
+    setDialogState({
+      isOpen: true,
+      variant: "confirm",
+      title: "Cet élément est déjà enregistré",
+      description: `Voulez-vous mettre à jour la facture ${invoice.invoiceNumber} avec les nouvelles informations ?`,
     });
-    setIsEditModalOpen(false);
+  };
+
+  const handleConfirmUpdate = async () => {
+    setIsSubmitting(true);
+    try {
+      await updateInvoice(invoice.id, {
+        notes: editNotes.trim(),
+        dueDate: editDueDate,
+      });
+      setIsSubmitting(false);
+      setIsEditModalOpen(false);
+      setDialogState({
+        isOpen: true,
+        variant: "success",
+        title: "Modifications enregistrées",
+        description: `La facture ${invoice.invoiceNumber} a été mise à jour avec succès dans Supabase.`,
+      });
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Erreur de mise à jour",
+        description: err?.message || "Impossible de mettre à jour la facture dans Supabase.",
+      });
+    }
   };
 
   const handlePrint = () => {
@@ -92,6 +196,7 @@ export default function InvoiceDetailPage() {
   return (
     <AppShell>
       {/* Top Bar Navigation & Actions */}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
         <div className="flex items-center gap-2.5 min-w-0">
           <Link
@@ -140,6 +245,21 @@ export default function InvoiceDetailPage() {
               <option value="overdue">En retard</option>
             </select>
           </div>
+
+          <button
+            type="button"
+            disabled={isDownloadingPdf}
+            onClick={handleDownloadPdf}
+            className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 rounded-xl transition-all shadow-sm min-h-[40px] shrink-0"
+            title="Télécharger la facture en PDF"
+          >
+            {isDownloadingPdf ? (
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            <span>Télécharger PDF</span>
+          </button>
 
           <button
             type="button"
@@ -409,14 +529,11 @@ export default function InvoiceDetailPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Date d&apos;échéance
-                </label>
-                <input
-                  type="date"
+                <DatePicker
+                  label="Date d'échéance"
                   value={editDueDate}
-                  onChange={(e) => setEditDueDate(e.target.value)}
-                  className="w-full px-3 py-2 text-base sm:text-xs bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                  onChange={setEditDueDate}
+                  placeholder="Sélectionner la date"
                 />
               </div>
 
@@ -437,14 +554,16 @@ export default function InvoiceDetailPage() {
               <button
                 type="button"
                 onClick={() => setIsEditModalOpen(false)}
-                className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl min-h-[44px]"
+                disabled={isSubmitting}
+                className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl min-h-[44px] disabled:opacity-50"
               >
                 Annuler
               </button>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={handleSaveEdit}
-                className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm min-h-[44px]"
+                className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 rounded-xl shadow-sm min-h-[44px]"
               >
                 Enregistrer
               </button>
@@ -452,6 +571,25 @@ export default function InvoiceDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Boîte de dialogue centrée réutilisable (modale officielle) */}
+      <FeedbackModal
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        variant={dialogState.variant}
+        title={dialogState.title}
+        description={dialogState.description}
+        closeLabel="Fermer"
+        confirmLabel="Mettre à jour"
+        cancelLabel="Annuler"
+        onConfirm={handleConfirmUpdate}
+        isLoading={isSubmitting}
+        onDownload={
+          dialogState.variant === "success" ? handleDownloadPdf : undefined
+        }
+        downloadLabel="Télécharger la facture"
+        isDownloading={isDownloadingPdf}
+      />
     </AppShell>
   );
 }

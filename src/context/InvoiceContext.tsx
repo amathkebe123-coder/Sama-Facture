@@ -1,88 +1,171 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
-import {
-  Invoice,
-  Client,
-  INITIAL_INVOICES,
-  INITIAL_CLIENTS,
-  InvoiceLine,
-} from "@/lib/data/fixtures";
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { User } from "@supabase/supabase-js";
+import { supabase } from "@/lib/supabase";
+import { Invoice, Client } from "@/lib/data/fixtures";
 import { InvoiceStatus } from "@/lib/invoice-status";
+import { CompanySettings, DEFAULT_COMPANY_SETTINGS } from "@/lib/company";
+import {
+  ProductItem,
+  PaymentItem,
+  fetchClients,
+  createClientInDb,
+  updateClientInDb,
+  deleteClientFromDb,
+  fetchInvoices,
+  createInvoiceInDb,
+  updateInvoiceInDb,
+  updateInvoiceStatusInDb,
+  deleteInvoiceFromDb,
+  fetchProducts,
+  createProductInDb,
+  updateProductInDb,
+  deleteProductFromDb,
+  fetchPayments,
+  createPaymentInDb,
+  updatePaymentInDb,
+  deletePaymentFromDb,
+  fetchCompanySettingsFromDb,
+  updateCompanySettingsInDb,
+} from "@/lib/supabase-db";
+
+interface UserProfile {
+  fullName: string;
+  companyName: string;
+  email: string;
+}
 
 interface InvoiceContextType {
+  user: User | null;
+  userProfile: UserProfile;
+  signOut: () => Promise<void>;
   invoices: Invoice[];
   clients: Client[];
-  addInvoice: (data: Omit<Invoice, "id" | "invoiceNumber">) => Invoice;
-  updateInvoice: (id: string, data: Partial<Invoice>) => void;
-  deleteInvoice: (id: string) => void;
-  updateInvoiceStatus: (id: string, status: InvoiceStatus) => void;
-  addClient: (data: Omit<Client, "id">) => Client;
-  updateClient: (id: string, data: Partial<Client>) => void;
-  deleteClient: (id: string) => void;
+  products: ProductItem[];
+  payments: PaymentItem[];
+  companySettings: CompanySettings;
+  isLoading: boolean;
+  addInvoice: (data: Omit<Invoice, "id" | "invoiceNumber">) => Promise<Invoice>;
+  updateInvoice: (id: string, data: Partial<Invoice>) => Promise<void>;
+  deleteInvoice: (id: string) => Promise<void>;
+  updateInvoiceStatus: (id: string, status: InvoiceStatus) => Promise<void>;
+  addClient: (data: Omit<Client, "id">) => Promise<Client>;
+  updateClient: (id: string, data: Partial<Client>) => Promise<void>;
+  deleteClient: (id: string) => Promise<void>;
+  addProduct: (data: Omit<ProductItem, "id">) => Promise<ProductItem>;
+  updateProduct: (id: string, data: Partial<ProductItem>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
+  addPayment: (data: Omit<PaymentItem, "id">) => Promise<PaymentItem>;
+  updatePayment: (id: string, data: Partial<PaymentItem>) => Promise<void>;
+  deletePayment: (id: string) => Promise<void>;
+  updateSettings: (settings: CompanySettings) => Promise<void>;
   getInvoice: (id: string) => Invoice | undefined;
   getClient: (id: string) => Client | undefined;
+  refreshAll: () => Promise<void>;
 }
 
 const InvoiceContext = createContext<InvoiceContextType | undefined>(undefined);
 
-const LOCAL_STORAGE_INVOICES_KEY = "sama_facture_invoices_v1";
-const LOCAL_STORAGE_CLIENTS_KEY = "sama_facture_clients_v1";
-
 export function InvoiceProvider({ children }: { children: React.ReactNode }) {
-  const [invoices, setInvoices] = useState<Invoice[]>(INITIAL_INVOICES);
-  const [clients, setClients] = useState<Client[]>(INITIAL_CLIENTS);
-  const [isInitialized, setIsInitialized] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [products, setProducts] = useState<ProductItem[]>([]);
+  const [payments, setPayments] = useState<PaymentItem[]>([]);
+  const [companySettings, setCompanySettings] = useState<CompanySettings>(DEFAULT_COMPANY_SETTINGS);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Charger depuis le localStorage après le montage client
-  useEffect(() => {
+  const userProfile: UserProfile = {
+    fullName: user?.user_metadata?.full_name || user?.email?.split("@")[0] || "Utilisateur",
+    companyName: user?.user_metadata?.company_name || companySettings.companyName || "Mon Entreprise",
+    email: user?.email || "",
+  };
+
+  const refreshAll = useCallback(async () => {
     try {
-      const savedInvoices = localStorage.getItem(LOCAL_STORAGE_INVOICES_KEY);
-      const savedClients = localStorage.getItem(LOCAL_STORAGE_CLIENTS_KEY);
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      setUser(currentUser);
 
-      if (savedInvoices) {
-        setInvoices(JSON.parse(savedInvoices));
+      if (!currentUser) {
+        setInvoices([]);
+        setClients([]);
+        setProducts([]);
+        setPayments([]);
+        setIsLoading(false);
+        return;
       }
-      if (savedClients) {
-        setClients(JSON.parse(savedClients));
-      }
-    } catch {
-      // Si localStorage indisponible, conserver les fixtures
+
+      const [settingsData, clientsData, invoicesData, productsData, paymentsData] =
+        await Promise.all([
+          fetchCompanySettingsFromDb(),
+          fetchClients(),
+          fetchInvoices(),
+          fetchProducts(),
+          fetchPayments(),
+        ]);
+
+      setCompanySettings(settingsData);
+      setClients(clientsData);
+      setInvoices(invoicesData);
+      setProducts(productsData);
+      setPayments(paymentsData);
+    } catch (err) {
+      console.error("Erreur chargement Supabase:", err);
+    } finally {
+      setIsLoading(false);
     }
-    setIsInitialized(true);
   }, []);
 
-  // Sauvegarder dans le localStorage
   useEffect(() => {
-    if (!isInitialized) return;
-    try {
-      localStorage.setItem(LOCAL_STORAGE_INVOICES_KEY, JSON.stringify(invoices));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [invoices, isInitialized]);
+    refreshAll();
 
-  useEffect(() => {
-    if (!isInitialized) return;
-    try {
-      localStorage.setItem(LOCAL_STORAGE_CLIENTS_KEY, JSON.stringify(clients));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [clients, isInitialized]);
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        setUser(session.user);
+        refreshAll();
+      } else if (event === "SIGNED_OUT") {
+        setUser(null);
+        setInvoices([]);
+        setClients([]);
+        setProducts([]);
+        setPayments([]);
+      }
+    });
 
-  const addInvoice = (data: Omit<Invoice, "id" | "invoiceNumber">): Invoice => {
-    const nextNumber = invoices.length + 43; // format séquentiel
-    const invoiceNumber = `FAC-2026-${String(nextNumber).padStart(4, "0")}`;
-    const newInvoice: Invoice = {
-      ...data,
-      id: `inv-${Date.now()}`,
-      invoiceNumber,
+    return () => {
+      subscription.unsubscribe();
     };
+  }, [refreshAll]);
+
+  const signOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setInvoices([]);
+    setClients([]);
+    setProducts([]);
+    setPayments([]);
+    if (typeof window !== "undefined") {
+      window.location.href = "/connexion";
+    }
+  };
+
+  // ---------------------------------------------------------------------------
+  // FACTURES
+  // ---------------------------------------------------------------------------
+
+  const addInvoice = async (data: Omit<Invoice, "id" | "invoiceNumber">): Promise<Invoice> => {
+    const prefix = companySettings.prefix || "FAC-2026-";
+    const nextSeq = invoices.length + 1;
+    const invoiceNumber = `${prefix}${String(nextSeq).padStart(4, "0")}`;
+
+    const newInvoice = await createInvoiceInDb(data, invoiceNumber, user?.id);
 
     setInvoices((prev) => [newInvoice, ...prev]);
 
-    // Mettre à jour les totaux du client correspondant
+    // Mettre à jour les compteurs du client localement
     setClients((prev) =>
       prev.map((c) => {
         if (c.id === data.client.id) {
@@ -103,44 +186,42 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     return newInvoice;
   };
 
-  const updateInvoice = (id: string, data: Partial<Invoice>) => {
+  const updateInvoice = async (id: string, data: Partial<Invoice>): Promise<void> => {
+    await updateInvoiceInDb(id, data, user?.id);
     setInvoices((prev) =>
       prev.map((inv) => (inv.id === id ? { ...inv, ...data } : inv))
     );
   };
 
-  const deleteInvoice = (id: string) => {
+  const deleteInvoice = async (id: string): Promise<void> => {
+    await deleteInvoiceFromDb(id);
     setInvoices((prev) => prev.filter((inv) => inv.id !== id));
   };
 
-  const updateInvoiceStatus = (id: string, status: InvoiceStatus) => {
+  const updateInvoiceStatus = async (id: string, status: InvoiceStatus): Promise<void> => {
+    await updateInvoiceStatusInDb(id, status);
     setInvoices((prev) =>
-      prev.map((inv) => {
-        if (inv.id === id) {
-          return { ...inv, status };
-        }
-        return inv;
-      })
+      prev.map((inv) => (inv.id === id ? { ...inv, status } : inv))
     );
   };
 
-  const addClient = (data: Omit<Client, "id">): Client => {
-    const newClient: Client = {
-      ...data,
-      id: `cli-${Date.now()}`,
-      totalInvoiced: 0,
-      totalPaid: 0,
-      invoiceCount: 0,
-    };
+  // ---------------------------------------------------------------------------
+  // CLIENTS
+  // ---------------------------------------------------------------------------
+
+  const addClient = async (data: Omit<Client, "id">): Promise<Client> => {
+    const newClient = await createClientInDb(data, user?.id);
     setClients((prev) => [newClient, ...prev]);
     return newClient;
   };
 
-  const updateClient = (id: string, data: Partial<Client>) => {
+  const updateClient = async (id: string, data: Partial<Client>): Promise<void> => {
+    const updatedClient = await updateClientInDb(id, data);
     setClients((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, ...data } : c))
+      prev.map((c) => (c.id === id ? { ...c, ...updatedClient } : c))
     );
-    // Répercuter le nom sur les factures existantes du client
+
+    // Mettre à jour le nom / email du client dans les factures chargées
     if (data.name || data.email) {
       setInvoices((prev) =>
         prev.map((inv) => {
@@ -160,9 +241,67 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const deleteClient = (id: string) => {
+  const deleteClient = async (id: string): Promise<void> => {
+    await deleteClientFromDb(id);
     setClients((prev) => prev.filter((c) => c.id !== id));
   };
+
+  // ---------------------------------------------------------------------------
+  // PRODUITS
+  // ---------------------------------------------------------------------------
+
+  const addProduct = async (data: Omit<ProductItem, "id">): Promise<ProductItem> => {
+    const newProd = await createProductInDb(data, user?.id);
+    setProducts((prev) => [newProd, ...prev]);
+    return newProd;
+  };
+
+  const updateProduct = async (id: string, data: Partial<ProductItem>): Promise<void> => {
+    const updated = await updateProductInDb(id, data);
+    setProducts((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updated } : p))
+    );
+  };
+
+  const deleteProduct = async (id: string): Promise<void> => {
+    await deleteProductFromDb(id);
+    setProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ---------------------------------------------------------------------------
+  // PAIEMENTS
+  // ---------------------------------------------------------------------------
+
+  const addPayment = async (data: Omit<PaymentItem, "id">): Promise<PaymentItem> => {
+    const newPayment = await createPaymentInDb(data, user?.id);
+    setPayments((prev) => [newPayment, ...prev]);
+    return newPayment;
+  };
+
+  const updatePayment = async (id: string, data: Partial<PaymentItem>): Promise<void> => {
+    const updated = await updatePaymentInDb(id, data);
+    setPayments((prev) =>
+      prev.map((p) => (p.id === id ? { ...p, ...updated } : p))
+    );
+  };
+
+  const deletePayment = async (id: string): Promise<void> => {
+    await deletePaymentFromDb(id);
+    setPayments((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // ---------------------------------------------------------------------------
+  // PARAMÈTRES
+  // ---------------------------------------------------------------------------
+
+  const updateSettings = async (settings: CompanySettings): Promise<void> => {
+    await updateCompanySettingsInDb(settings, user?.id);
+    setCompanySettings(settings);
+  };
+
+  // ---------------------------------------------------------------------------
+  // RECHERCHES LOCALES
+  // ---------------------------------------------------------------------------
 
   const getInvoice = (id: string) => {
     return invoices.find((inv) => inv.id === id);
@@ -175,8 +314,15 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
   return (
     <InvoiceContext.Provider
       value={{
+        user,
+        userProfile,
+        signOut,
         invoices,
         clients,
+        products,
+        payments,
+        companySettings,
+        isLoading,
         addInvoice,
         updateInvoice,
         deleteInvoice,
@@ -184,8 +330,16 @@ export function InvoiceProvider({ children }: { children: React.ReactNode }) {
         addClient,
         updateClient,
         deleteClient,
+        addProduct,
+        updateProduct,
+        deleteProduct,
+        addPayment,
+        updatePayment,
+        deletePayment,
+        updateSettings,
         getInvoice,
         getClient,
+        refreshAll,
       }}
     >
       {children}
@@ -200,4 +354,3 @@ export function useInvoices() {
   }
   return context;
 }
-

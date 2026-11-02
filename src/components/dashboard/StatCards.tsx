@@ -10,12 +10,18 @@ interface StatCardsProps {
 }
 
 export function StatCards({ stats }: StatCardsProps) {
+  const overdueCount = stats.overdueCount || 0;
+  const collectionRate =
+    stats.totalInvoiced > 0
+      ? Math.round((stats.totalCollected / stats.totalInvoiced) * 100)
+      : 0;
+
   const cards = [
     {
       title: "Total Facturé",
       value: formatFCFA(stats.totalInvoiced),
-      period: "30 derniers jours",
-      trend: `+${stats.totalInvoicedTrend}%`,
+      period: "Exercice en cours",
+      trend: "Temps réel",
       trendPositive: true,
       icon: TrendingUp,
       iconColor: "text-emerald-600 bg-emerald-50",
@@ -23,8 +29,8 @@ export function StatCards({ stats }: StatCardsProps) {
     {
       title: "Montant Encaissé",
       value: formatFCFA(stats.totalCollected),
-      period: "30 derniers jours",
-      trend: `+${stats.totalCollectedTrend}%`,
+      period: "Paiements reçus",
+      trend: `${collectionRate}% encaissé`,
       trendPositive: true,
       icon: CheckCircle2,
       iconColor: "text-emerald-600 bg-emerald-50",
@@ -32,17 +38,22 @@ export function StatCards({ stats }: StatCardsProps) {
     {
       title: "En Attente",
       value: formatFCFA(stats.pendingAmount),
-      period: `${stats.pendingCount} factures en cours`,
-      trend: "dont 1 en retard",
-      trendPositive: false,
+      period: `${stats.pendingCount} ${stats.pendingCount <= 1 ? "facture" : "factures"} en cours`,
+      trend:
+        overdueCount > 0
+          ? `${overdueCount} en retard`
+          : stats.pendingCount === 0
+          ? "À jour"
+          : "En cours",
+      trendPositive: overdueCount === 0,
       icon: Clock,
       iconColor: "text-amber-600 bg-amber-50",
     },
     {
       title: "Factures Émises",
       value: `${stats.invoiceCount}`,
-      period: "30 derniers jours",
-      trend: `+${stats.invoiceCountTrend}%`,
+      period: "Total créé",
+      trend: `${stats.invoiceCount} ${stats.invoiceCount <= 1 ? "facture" : "factures"}`,
       trendPositive: true,
       icon: Receipt,
       iconColor: "text-blue-600 bg-blue-50",

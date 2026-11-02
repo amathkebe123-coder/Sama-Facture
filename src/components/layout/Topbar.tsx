@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Search, Bell, Plus, Menu, Calendar, SlidersHorizontal, X } from "lucide-react";
+import { Search, Bell, Plus, Menu, SlidersHorizontal, X } from "lucide-react";
+import { DatePicker } from "@/components/ui/DatePicker";
 
 interface TopbarProps {
   onOpenMobileSidebar: () => void;
@@ -10,6 +11,7 @@ interface TopbarProps {
 
 export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
   const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
+  const [selectedPeriodDate, setSelectedPeriodDate] = useState<string>("");
 
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between h-14 sm:h-16 px-3 sm:px-6 md:px-8 bg-white/90 backdrop-blur-md border-b border-slate-100 w-full max-w-full">
@@ -74,13 +76,15 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
           {/* Right: Actions, Notifications & Quick Action */}
           <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             {/* Date period selector (desktop only) */}
-            <button
-              type="button"
-              className="hidden lg:inline-flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-600 bg-white border border-slate-200/80 rounded-xl hover:bg-slate-50 transition-colors shadow-sm"
-            >
-              <Calendar className="w-3.5 h-3.5 text-slate-400" />
-              <span>30 derniers jours</span>
-            </button>
+            <div className="hidden lg:block w-48">
+              <DatePicker
+                placeholder="30 derniers jours"
+                value={selectedPeriodDate}
+                onChange={setSelectedPeriodDate}
+                size="sm"
+                align="right"
+              />
+            </div>
 
             {/* Filter icon (desktop/tablet only) */}
             <button
@@ -98,7 +102,6 @@ export function Topbar({ onOpenMobileSidebar }: TopbarProps) {
               title="Notifications"
             >
               <Bell className="w-4 h-4" />
-              <span className="absolute top-2 right-2 w-2 h-2 bg-emerald-500 rounded-full ring-2 ring-white" />
             </button>
 
             {/* Primary CTA: Nouvelle facture */}

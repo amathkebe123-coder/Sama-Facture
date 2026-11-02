@@ -14,6 +14,7 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
 import { useInvoices } from "@/context/InvoiceContext";
 import { formatFCFA } from "@/lib/money";
 import { Client } from "@/lib/data/fixtures";
@@ -35,6 +36,33 @@ export default function ClientsPage() {
 
   const [deletingClient, setDeletingClient] = useState<Client | null>(null);
 
+  // Détection des doublons et confirmation de mise à jour
+  const [savedClient, setSavedClient] = useState<Client | null>(null);
+  const [savedSnapshot, setSavedSnapshot] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Boîte de dialogue centrée (modale unique officielle)
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    variant: FeedbackModalVariant;
+    title: string;
+    description: string;
+  }>({
+    isOpen: false,
+    variant: "success",
+    title: "",
+    description: "",
+  });
+
+  const getClientFormSnapshot = () =>
+    JSON.stringify({
+      name: name.trim(),
+      email: email.trim().toLowerCase(),
+      phone: phone.trim(),
+      address: address.trim(),
+      city: city.trim(),
+    });
+
   const filteredClients = clients.filter((c) => {
     const q = searchQuery.toLowerCase().trim();
     return (
@@ -47,6 +75,8 @@ export default function ClientsPage() {
 
   const handleOpenAddModal = () => {
     setEditingClient(null);
+    setSavedClient(null);
+    setSavedSnapshot(null);
     setName("");
     setEmail("");
     setPhone("+221 ");
@@ -57,11 +87,21 @@ export default function ClientsPage() {
 
   const handleOpenEditModal = (client: Client) => {
     setEditingClient(client);
+    setSavedClient(client);
     setName(client.name);
     setEmail(client.email);
     setPhone(client.phone || "+221 ");
     setAddress(client.address || "");
     setCity(client.city || "Dakar");
+    setSavedSnapshot(
+      JSON.stringify({
+        name: client.name.trim(),
+        email: client.email.trim().toLowerCase(),
+        phone: (client.phone || "+221 ").trim(),
+        address: (client.address || "").trim(),
+        city: (client.city || "Dakar").trim(),
+      })
+    );
     setIsModalOpen(true);
   };
 
@@ -69,30 +109,106 @@ export default function ClientsPage() {
     e.preventDefault();
     if (!name.trim() || !email.trim()) return;
 
-    if (editingClient) {
-      updateClient(editingClient.id, {
-        name,
-        email,
-        phone,
-        address,
-        city,
+    const currentSnapshot = getClientFormSnapshot();
+
+    // Cas d'un client déjà enregistré ou en cours d'édition
+    const targetClient = editingClient || savedClient;
+    if (targetClient) {
+      if (currentSnapshot === savedSnapshot) {
+        setDialogState({
+          isOpen: true,
+          variant: "info",
+          title: "Aucune modification",
+          description: "Vous n'avez modifié aucune information depuis le dernier enregistrement.",
+        });
+        return;
+      }
+
+      // Si des champs ont été modifiés, ouvrir la boîte de confirmation
+      setDialogState({
+        isOpen: true,
+        variant: "confirm",
+        title: "Cet élément est déjà enregistré",
+        description: `Voulez-vous mettre à jour le client ${targetClient.name} avec les nouvelles informations ?`,
       });
-    } else {
-      addClient({
-        name,
-        email,
-        phone,
-        address,
-        city,
-      });
+      return;
     }
 
-    setIsModalOpen(false);
+    // PREMIER clic sur Enregistrer : création normale
+    setIsSubmitting(true);
+    (async () => {
+      try {
+        const newClient = await addClient({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          address: address.trim(),
+          city: city.trim(),
+        });
+
+        setSavedClient(newClient);
+        setSavedSnapshot(currentSnapshot);
+        setIsSubmitting(false);
+        setIsModalOpen(false);
+        setDialogState({
+          isOpen: true,
+          variant: "success",
+          title: "Enregistré avec succès",
+          description: `Le client ${newClient.name} a été enregistré avec succès dans Supabase.`,
+        });
+      } catch (err: any) {
+        setIsSubmitting(false);
+        setDialogState({
+          isOpen: true,
+          variant: "error",
+          title: "Erreur d'enregistrement",
+          description: err?.message || "Impossible d'enregistrer le client dans Supabase.",
+        });
+      }
+    })();
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmUpdate = async () => {
+    const targetClient = editingClient || savedClient;
+    if (!targetClient) return;
+
+    setIsSubmitting(true);
+    try {
+      await updateClient(targetClient.id, {
+        name: name.trim(),
+        email: email.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        city: city.trim(),
+      });
+
+      setSavedSnapshot(getClientFormSnapshot());
+      setIsSubmitting(false);
+      setIsModalOpen(false);
+      setDialogState({
+        isOpen: true,
+        variant: "success",
+        title: "Modifications enregistrées",
+        description: `Les informations du client ${targetClient.name} ont été mises à jour avec succès.`,
+      });
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Erreur de mise à jour",
+        description: err?.message || "Impossible de mettre à jour le client dans Supabase.",
+      });
+    }
+  };
+
+  const handleConfirmDelete = async () => {
     if (deletingClient) {
-      deleteClient(deletingClient.id);
+      try {
+        await deleteClient(deletingClient.id);
+      } catch (err) {
+        console.error("Erreur suppression client:", err);
+      }
       setDeletingClient(null);
     }
   };
@@ -100,6 +216,7 @@ export default function ClientsPage() {
   return (
     <AppShell>
       {/* Top Header */}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 w-full">
         <div>
           <div className="flex items-center gap-2">
@@ -107,7 +224,7 @@ export default function ClientsPage() {
               Clients
             </h1>
             <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
-              {clients.length} clients
+              {clients.length} {clients.length <= 1 ? "client" : "clients"}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -405,21 +522,37 @@ export default function ClientsPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl min-h-[44px]"
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl min-h-[44px] disabled:opacity-50"
                 >
                   Annuler
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl min-h-[44px] shadow-sm"
+                  disabled={isSubmitting}
+                  className="flex-1 sm:flex-initial px-4 py-2.5 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl min-h-[44px] shadow-sm disabled:opacity-50"
                 >
-                  {editingClient ? "Mettre à jour" : "Ajouter"}
+                  {editingClient ? "Mettre à jour" : "Enregistrer"}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Boîte de dialogue centrée réutilisable (modale officielle) */}
+      <FeedbackModal
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        variant={dialogState.variant}
+        title={dialogState.title}
+        description={dialogState.description}
+        closeLabel="Fermer"
+        confirmLabel="Mettre à jour"
+        cancelLabel="Annuler"
+        onConfirm={handleConfirmUpdate}
+        isLoading={isSubmitting}
+      />
 
       {/* Modal Confirmation de Suppression Client */}
       {deletingClient && (

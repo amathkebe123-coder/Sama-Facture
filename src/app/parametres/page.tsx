@@ -1,17 +1,127 @@
 "use client";
 
-import React, { useState } from "react";
-import { Check } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { Check, RefreshCw } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
+import { getCompanySettings, saveCompanySettings } from "@/lib/company";
+
+import { useInvoices } from "@/context/InvoiceContext";
 
 export default function SettingsPage() {
+  const { companySettings, updateSettings } = useInvoices();
   const [activeTab, setActiveTab] = useState("company");
-  const [saved, setSaved] = useState(false);
+
+  // Champs contrôlés
+  const [companyName, setCompanyName] = useState(companySettings.companyName);
+  const [ninea, setNinea] = useState(companySettings.ninea);
+  const [rccm, setRccm] = useState(companySettings.rccm);
+  const [phone, setPhone] = useState(companySettings.phone);
+  const [address, setAddress] = useState(companySettings.address);
+
+  // Facturation
+  const [prefix, setPrefix] = useState(companySettings.prefix);
+  const [defaultTax, setDefaultTax] = useState(companySettings.defaultTax);
+  const [paymentTerms, setPaymentTerms] = useState(companySettings.paymentTerms);
+
+  useEffect(() => {
+    if (companySettings) {
+      setCompanyName(companySettings.companyName);
+      setNinea(companySettings.ninea);
+      setRccm(companySettings.rccm);
+      setPhone(companySettings.phone);
+      setAddress(companySettings.address);
+      setPrefix(companySettings.prefix);
+      setDefaultTax(companySettings.defaultTax);
+      setPaymentTerms(companySettings.paymentTerms);
+    }
+  }, [companySettings]);
+
+  const getSettingsSnapshot = () =>
+    JSON.stringify({
+      companyName: companyName.trim(),
+      ninea: ninea.trim(),
+      rccm: rccm.trim(),
+      phone: phone.trim(),
+      address: address.trim(),
+      prefix: prefix.trim(),
+      defaultTax: defaultTax.trim(),
+      paymentTerms: paymentTerms.trim(),
+    });
+
+  const [savedSnapshot, setSavedSnapshot] = useState<string>(() => getSettingsSnapshot());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Boîte de dialogue centrée
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    variant: FeedbackModalVariant;
+    title: string;
+    description: string;
+  }>({
+    isOpen: false,
+    variant: "success",
+    title: "",
+    description: "",
+  });
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2500);
+    const currentSnap = getSettingsSnapshot();
+
+    // Cas particulier : aucun champ modifié
+    if (currentSnap === savedSnapshot) {
+      setDialogState({
+        isOpen: true,
+        variant: "info",
+        title: "Aucune modification",
+        description:
+          "Vous n'avez modifié aucune information depuis le dernier enregistrement.",
+      });
+      return;
+    }
+
+    // Champs modifiés : ouvrir la boîte de dialogue de confirmation
+    setDialogState({
+      isOpen: true,
+      variant: "confirm",
+      title: "Cet élément est déjà enregistré",
+      description:
+        "Voulez-vous mettre à jour les paramètres de l'entreprise avec les nouvelles informations ?",
+    });
+  };
+
+  const handleConfirmUpdate = async () => {
+    setIsSubmitting(true);
+    try {
+      await updateSettings({
+        companyName: companyName.trim(),
+        ninea: ninea.trim(),
+        rccm: rccm.trim(),
+        phone: phone.trim(),
+        address: address.trim(),
+        prefix: prefix.trim(),
+        defaultTax: defaultTax.trim(),
+        paymentTerms: paymentTerms.trim(),
+      });
+      setSavedSnapshot(getSettingsSnapshot());
+      setIsSubmitting(false);
+      setDialogState({
+        isOpen: true,
+        variant: "success",
+        title: "Paramètres mis à jour",
+        description:
+          "Les informations de votre entreprise ont bien été enregistrées dans Supabase. Elles apparaîtront sur vos prochaines factures.",
+      });
+    } catch (err: any) {
+      setIsSubmitting(false);
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Erreur d'enregistrement",
+        description: err?.message || "Impossible de sauvegarder les paramètres dans Supabase.",
+      });
+    }
   };
 
   return (
@@ -57,78 +167,140 @@ export default function SettingsPage() {
       {/* Content Form Card */}
       <div className="bg-white border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] p-4 sm:p-6 max-w-3xl w-full">
         <form onSubmit={handleSave} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Raison sociale
-              </label>
-              <input
-                type="text"
-                defaultValue="Sama Facture SN SARL"
-                className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Numéro NINEA (Sénégal)
-              </label>
-              <input
-                type="text"
-                defaultValue="008472912 2G3"
-                className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Numéro RCCM
-              </label>
-              <input
-                type="text"
-                defaultValue="SN-DKR-2024-B-1420"
-                className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Téléphone Wave / OM pro
-              </label>
-              <input
-                type="text"
-                defaultValue="+221 77 821 45 67"
-                className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
-              />
-            </div>
-          </div>
+          {activeTab === "company" ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Raison sociale
+                  </label>
+                  <input
+                    type="text"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Numéro NINEA (Sénégal)
+                  </label>
+                  <input
+                    type="text"
+                    value={ninea}
+                    onChange={(e) => setNinea(e.target.value)}
+                    className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Numéro RCCM
+                  </label>
+                  <input
+                    type="text"
+                    value={rccm}
+                    onChange={(e) => setRccm(e.target.value)}
+                    className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 mb-1">
+                    Téléphone Wave / OM pro
+                  </label>
+                  <input
+                    type="text"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                  />
+                </div>
+              </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Adresse du siège social
-            </label>
-            <input
-              type="text"
-              defaultValue="12 Avenue Léopold Sédar Senghor, Dakar Plateau"
-              className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
-            />
-          </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Adresse du siège social
+                </label>
+                <input
+                  type="text"
+                  value={address}
+                  onChange={(e) => setAddress(e.target.value)}
+                  className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                />
+              </div>
+            </>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Préfixe de numérotation
+                </label>
+                <input
+                  type="text"
+                  value={prefix}
+                  onChange={(e) => setPrefix(e.target.value)}
+                  className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Taux de TVA par défaut (%)
+                </label>
+                <input
+                  type="number"
+                  value={defaultTax}
+                  onChange={(e) => setDefaultTax(e.target.value)}
+                  className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Délai de règlement par défaut (jours)
+                </label>
+                <input
+                  type="number"
+                  value={paymentTerms}
+                  onChange={(e) => setPaymentTerms(e.target.value)}
+                  className="w-full px-3 py-2 text-base sm:text-sm bg-slate-50 border border-slate-200 rounded-xl min-h-[44px]"
+                />
+              </div>
+            </div>
+          )}
 
-          <div className="pt-3 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            {saved ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600 bg-emerald-50 px-3 py-2 rounded-xl border border-emerald-200">
-                <Check className="w-4 h-4" />
-                Enregistré avec succès
-              </span>
-            ) : (
-              <span />
-            )}
+          <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
             <button
               type="submit"
-              className="w-full sm:w-auto px-4 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 rounded-xl transition-all shadow-sm min-h-[44px]"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 rounded-xl transition-all shadow-sm min-h-[44px]"
             >
-              Enregistrer les paramètres
+              {isSubmitting ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Enregistrement en cours...</span>
+                </>
+              ) : (
+                <>
+                  <Check className="w-4 h-4" />
+                  <span>Enregistrer les paramètres</span>
+                </>
+              )}
             </button>
           </div>
         </form>
       </div>
+
+      {/* Boîte de dialogue centrée (modale officielle) */}
+      <FeedbackModal
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        variant={dialogState.variant}
+        title={dialogState.title}
+        description={dialogState.description}
+        closeLabel="Fermer"
+        confirmLabel="Mettre à jour"
+        cancelLabel="Annuler"
+        onConfirm={handleConfirmUpdate}
+        isLoading={isSubmitting}
+      />
     </AppShell>
   );
 }

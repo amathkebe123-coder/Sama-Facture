@@ -10,18 +10,55 @@ import {
   Share2,
   Eye,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
+import { DatePicker } from "@/components/ui/DatePicker";
+import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
 import { useInvoices } from "@/context/InvoiceContext";
 import { formatFCFA } from "@/lib/money";
 import { getInvoiceStatusConfig } from "@/lib/invoice-status";
-import { formatDateFr } from "@/lib/data/fixtures";
+import { formatDateFr, Invoice } from "@/lib/data/fixtures";
+import { downloadInvoicePdf } from "@/lib/pdf-generator";
 
 export default function InvoicesListPage() {
   const { invoices } = useInvoices();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedStatus, setSelectedStatus] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState<string>("");
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  // Boîte d'erreur du design system en cas d'échec
+  const [dialogState, setDialogState] = useState<{
+    isOpen: boolean;
+    variant: FeedbackModalVariant;
+    title: string;
+    description: string;
+  }>({
+    isOpen: false,
+    variant: "error",
+    title: "",
+    description: "",
+  });
+
+  const handleDownloadPdf = async (inv: Invoice) => {
+    setDownloadingId(inv.id);
+    try {
+      await downloadInvoicePdf(inv);
+    } catch (err) {
+      console.error("Erreur lors du téléchargement du PDF:", err);
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Échec du téléchargement",
+        description:
+          "Une erreur est survenue lors de la génération du fichier PDF. Veuillez vérifier les données et réessayer.",
+      });
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   const statusTabs = [
     { id: "all", label: "Toutes", count: invoices.length },
@@ -59,7 +96,12 @@ export default function InvoicesListPage() {
       (inv.lines[0]?.description &&
         inv.lines[0].description.toLowerCase().includes(query));
 
-    return matchesStatus && matchesQuery;
+    const matchesDate =
+      !dateFilter ||
+      inv.issueDate === dateFilter ||
+      inv.dueDate === dateFilter;
+
+    return matchesStatus && matchesQuery && matchesDate;
   });
 
   return (
@@ -72,7 +114,7 @@ export default function InvoicesListPage() {
               Factures
             </h1>
             <span className="px-2 py-0.5 text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-100 rounded-full">
-              {invoices.length} factures
+              {invoices.length} {invoices.length <= 1 ? "facture" : "factures"}
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
@@ -121,16 +163,27 @@ export default function InvoicesListPage() {
           })}
         </div>
 
-        {/* Search Input */}
-        <div className="relative w-full">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Rechercher client, n° facture..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800"
-          />
+        {/* Search Input & Date Filter */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Rechercher client, n° facture..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-3 py-2.5 text-base sm:text-sm bg-slate-50 border border-slate-200/80 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 text-slate-800"
+            />
+          </div>
+          <div className="w-full sm:w-56 shrink-0">
+            <DatePicker
+              placeholder="Filtrer par date"
+              value={dateFilter}
+              onChange={setDateFilter}
+              size="sm"
+              align="right"
+            />
+          </div>
         </div>
       </div>
 
@@ -228,6 +281,19 @@ export default function InvoicesListPage() {
                             </Link>
                             <button
                               type="button"
+                              disabled={downloadingId === inv.id}
+                              onClick={() => handleDownloadPdf(inv)}
+                              className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors min-w-[36px] min-h-[36px] flex items-center justify-center disabled:opacity-50"
+                              title="Télécharger la facture en PDF"
+                            >
+                              {downloadingId === inv.id ? (
+                                <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
                               onClick={() => {
                                 const text = encodeURIComponent(
                                   `Bonjour ${inv.client.name}, voici votre facture ${inv.invoiceNumber} d'un montant de ${formatFCFA(inv.total)}.`
@@ -291,14 +357,28 @@ export default function InvoicesListPage() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                    <div className="grid grid-cols-3 gap-2 pt-1">
                       <Link
                         href={`/factures/${inv.id}`}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 active:bg-slate-200 rounded-xl min-h-[44px] transition-colors"
+                        className="flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold text-slate-700 bg-slate-100 active:bg-slate-200 rounded-xl min-h-[44px] transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5 text-slate-500" />
-                        <span>Consulter</span>
+                        <span>Détail</span>
                       </Link>
+                      <button
+                        type="button"
+                        disabled={downloadingId === inv.id}
+                        onClick={() => handleDownloadPdf(inv)}
+                        className="flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 active:bg-emerald-100 rounded-xl min-h-[44px] transition-colors disabled:opacity-50"
+                        title="Télécharger la facture en PDF"
+                      >
+                        {downloadingId === inv.id ? (
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-emerald-600" />
+                        ) : (
+                          <Download className="w-3.5 h-3.5 text-emerald-600" />
+                        )}
+                        <span>PDF</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => {
@@ -307,7 +387,7 @@ export default function InvoicesListPage() {
                           );
                           window.open(`https://wa.me/?text=${text}`, "_blank");
                         }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 active:bg-emerald-100 rounded-xl min-h-[44px] transition-colors"
+                        className="flex items-center justify-center gap-1.5 px-2 py-2 text-xs font-semibold text-emerald-800 bg-emerald-50 active:bg-emerald-100 rounded-xl min-h-[44px] transition-colors"
                       >
                         <Share2 className="w-3.5 h-3.5 text-emerald-600" />
                         <span>WhatsApp</span>
@@ -320,6 +400,16 @@ export default function InvoicesListPage() {
           </>
         )}
       </div>
+
+      {/* Boîte d'erreur du design system */}
+      <FeedbackModal
+        isOpen={dialogState.isOpen}
+        onClose={() => setDialogState((prev) => ({ ...prev, isOpen: false }))}
+        variant={dialogState.variant}
+        title={dialogState.title}
+        description={dialogState.description}
+        closeLabel="Fermer"
+      />
     </AppShell>
   );
 }

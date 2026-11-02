@@ -16,9 +16,20 @@ interface RevenueChartProps {
 }
 
 export function RevenueChart({ data }: RevenueChartProps) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(6); // Default on Juillet (current)
+  const currentMonthIdx = data.findIndex((d) => d.isCurrent);
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(
+    currentMonthIdx >= 0 ? currentMonthIdx : null
+  );
 
-  const maxVal = Math.max(...data.map((d) => Math.max(d.facturé, d.encaissé)), 4500000);
+  const highestVal = Math.max(...data.map((d) => Math.max(d.facturé, d.encaissé)), 0);
+  const hasAnyData = highestVal > 0;
+  const maxVal = hasAnyData ? Math.max(Math.ceil(highestVal / 500000) * 500000, 1000000) : 1000000;
+
+  const formatGuide = (val: number) => {
+    if (val >= 1000000) return `${(val / 1000000).toFixed(1).replace(".0", "")}M`;
+    if (val >= 1000) return `${Math.round(val / 1000)}k`;
+    return "0";
+  };
 
   return (
     <div className="flex flex-col justify-between p-4 sm:p-6 bg-white border border-slate-100 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.02)] w-full overflow-hidden">
@@ -56,16 +67,16 @@ export function RevenueChart({ data }: RevenueChartProps) {
         {/* Y Axis Guide lines */}
         <div className="absolute inset-0 flex flex-col justify-between pointer-events-none text-[9px] sm:text-[10px] text-slate-400 font-medium pb-5">
           <div className="flex items-center justify-between border-b border-slate-100/80 pb-0.5">
-            <span>4,0M</span>
+            <span>{formatGuide(maxVal)}</span>
           </div>
           <div className="flex items-center justify-between border-b border-slate-100/80 pb-0.5">
-            <span>3,0M</span>
+            <span>{formatGuide(maxVal * 0.75)}</span>
           </div>
           <div className="flex items-center justify-between border-b border-slate-100/80 pb-0.5">
-            <span>2,0M</span>
+            <span>{formatGuide(maxVal * 0.5)}</span>
           </div>
           <div className="flex items-center justify-between border-b border-slate-100/80 pb-0.5">
-            <span>1,0M</span>
+            <span>{formatGuide(maxVal * 0.25)}</span>
           </div>
           <div className="flex items-center justify-between border-b border-slate-100 pb-0.5">
             <span>0</span>
