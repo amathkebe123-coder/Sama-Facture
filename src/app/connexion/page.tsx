@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Receipt, Mail, Lock, ArrowRight, RefreshCw } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
 import { validateAllowedEmail } from "@/lib/email-validator";
 import { useRateLimit } from "@/lib/useRateLimit";
@@ -75,14 +75,29 @@ export default function ConnexionPage() {
       return;
     }
 
+    if (!isSupabaseConfigured()) {
+      console.error("[Sama Facture Connexion] Variables d'environnement Supabase absentes !");
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Configuration Supabase manquante",
+        description:
+          "Les variables d'environnement NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY ne sont pas renseignées sur Vercel. Veuillez les ajouter dans les paramètres Vercel du projet.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const trimmedEmail = email.trim().toLowerCase();
+      console.log("[Sama Facture Connexion] Tentative connexion pour:", trimmedEmail);
 
       const { data, error } = await supabase.auth.signInWithPassword({
         email: trimmedEmail,
         password,
       });
+
+      console.log("[Sama Facture Connexion] Réponse signInWithPassword:", { data, error });
 
       if (error) {
         setIsLoading(false);
@@ -98,8 +113,20 @@ export default function ConnexionPage() {
           errorTitle = "Identifiants incorrects";
           errorDesc = "L'adresse email ou le mot de passe est incorrect. Veuillez vérifier vos informations.";
         } else if (error.message.includes("Email not confirmed")) {
+          console.warn("[Sama Facture Connexion] Email non confirmé. Déclenchement de l'envoi du code OTP...");
+          // Déclencher automatiquement l'envoi du code par Supabase
+          try {
+            await supabase.auth.resend({
+              type: "signup",
+              email: trimmedEmail,
+            });
+            console.log("[Sama Facture Connexion] Code OTP renvoyé avec succès.");
+          } catch (resendErr) {
+            console.error("[Sama Facture Connexion] Erreur renvoi OTP:", resendErr);
+          }
+
           errorTitle = "Adresse email non confirmée";
-          errorDesc = "Votre adresse email n'a pas encore été vérifiée par code. Veuillez compléter la vérification.";
+          errorDesc = "Votre adresse email n'a pas encore été vérifiée. Un code à 6 chiffres vient de vous être envoyé par email.";
           // Enregistrer et rediriger vers la page OTP
           if (typeof window !== "undefined") {
             sessionStorage.setItem("pending_verification_email", trimmedEmail);

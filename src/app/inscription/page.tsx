@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Receipt, Mail, Lock, User, Building2, ArrowRight } from "lucide-react";
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
 import { validateAllowedEmail } from "@/lib/email-validator";
 
@@ -75,9 +75,30 @@ export default function InscriptionPage() {
       return;
     }
 
+    if (!isSupabaseConfigured()) {
+      console.error("[Sama Facture Inscription] Variables d'environnement Supabase absentes !");
+      setDialogState({
+        isOpen: true,
+        variant: "error",
+        title: "Configuration Supabase manquante",
+        description:
+          "Les variables d'environnement NEXT_PUBLIC_SUPABASE_URL et NEXT_PUBLIC_SUPABASE_ANON_KEY ne sont pas renseignées sur Vercel. Veuillez les ajouter dans les paramètres Vercel du projet.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       const trimmedEmail = email.trim().toLowerCase();
+      const redirectUrl =
+        typeof window !== "undefined"
+          ? `${window.location.origin}/auth/callback`
+          : undefined;
+
+      console.log("[Sama Facture Inscription] Envoi signUp:", {
+        email: trimmedEmail,
+        redirectUrl,
+      });
 
       const { data, error } = await supabase.auth.signUp({
         email: trimmedEmail,
@@ -87,12 +108,16 @@ export default function InscriptionPage() {
             full_name: fullName.trim(),
             company_name: companyName.trim(),
           },
+          emailRedirectTo: redirectUrl,
         },
       });
+
+      console.log("[Sama Facture Inscription] Réponse signUp:", { data, error });
 
       setIsLoading(false);
 
       if (error) {
+        console.error("[Sama Facture Inscription] Erreur Supabase:", error);
         let errorTitle = "Échec de l'inscription";
         let errorDesc = error.message;
 
@@ -105,9 +130,13 @@ export default function InscriptionPage() {
         } else if (error.message.includes("Password should be at least")) {
           errorTitle = "Mot de passe invalide";
           errorDesc = "Le mot de passe doit comporter au moins 8 caractères.";
-        } else if (error.message.includes("rate limit") || error.message.includes("over_email_send_rate_limit")) {
+        } else if (
+          error.message.includes("rate limit") ||
+          error.message.includes("over_email_send_rate_limit")
+        ) {
           errorTitle = "Limite d'envoi atteinte";
-          errorDesc = "Veuillez patienter quelques instants avant de renvoyer une demande d'inscription.";
+          errorDesc =
+            "La limite d'envoi d'emails de Supabase a été atteinte. Veuillez patienter quelques minutes ou vérifier la configuration SMTP.";
         }
 
         setDialogState({
@@ -119,6 +148,23 @@ export default function InscriptionPage() {
         return;
       }
 
+      // Si Supabase a déjà créé la session (confirmation email désactivée)
+      if (data.session) {
+        console.log("[Sama Facture Inscription] Session active immédiate.");
+        router.push("/");
+        router.refresh();
+        return;
+      }
+
+      // Si le compte existait déjà sans confirmation, forcer l'envoi du code OTP
+      if (data.user && (!data.user.identities || data.user.identities.length === 0)) {
+        console.warn("[Sama Facture Inscription] Compte non confirmé existant, renvoi OTP...");
+        await supabase.auth.resend({
+          type: "signup",
+          email: trimmedEmail,
+        });
+      }
+
       // Enregistrer l'email pour la page de vérification OTP
       if (typeof window !== "undefined") {
         sessionStorage.setItem("pending_verification_email", trimmedEmail);
@@ -128,6 +174,7 @@ export default function InscriptionPage() {
       router.push(`/verification-email?email=${encodeURIComponent(trimmedEmail)}`);
     } catch (err: any) {
       setIsLoading(false);
+      console.error("[Sama Facture Inscription] Exception:", err);
       setDialogState({
         isOpen: true,
         variant: "error",
