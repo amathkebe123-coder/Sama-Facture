@@ -1,10 +1,13 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Check, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Check, RefreshCw, Calendar, Sparkles, ShieldCheck, ArrowRight } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { FeedbackModal, FeedbackModalVariant } from "@/components/ui/FeedbackModal";
 import { getCompanySettings, saveCompanySettings } from "@/lib/company";
+import { SUBSCRIPTION_PLANS, SubscriptionPlanId } from "@/lib/subscription-plans";
+import { formatFCFA } from "@/lib/money";
 
 import { useInvoices } from "@/context/InvoiceContext";
 
@@ -23,6 +26,30 @@ export default function SettingsPage() {
   const [prefix, setPrefix] = useState(companySettings.prefix);
   const [defaultTax, setDefaultTax] = useState(companySettings.defaultTax);
   const [paymentTerms, setPaymentTerms] = useState(companySettings.paymentTerms);
+
+  // État de l'abonnement
+  const [subData, setSubData] = useState<{
+    hasActiveSubscription: boolean;
+    subscription: { status: string; plan: string; expiresAt: string | null } | null;
+  } | null>(null);
+  const [isLoadingSub, setIsLoadingSub] = useState(true);
+
+  useEffect(() => {
+    async function fetchSub() {
+      try {
+        const res = await fetch("/api/abonnement/status");
+        if (res.ok) {
+          const json = await res.json();
+          setSubData(json);
+        }
+      } catch (e) {
+        console.error("Erreur chargement abonnement paramètres:", e);
+      } finally {
+        setIsLoadingSub(false);
+      }
+    }
+    fetchSub();
+  }, []);
 
   useEffect(() => {
     if (companySettings) {
@@ -162,6 +189,17 @@ export default function SettingsPage() {
         >
           Facturation & Numérotation
         </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("subscription")}
+          className={`px-3.5 py-2 text-xs sm:text-sm font-semibold rounded-xl transition-all whitespace-nowrap min-h-[40px] ${
+            activeTab === "subscription"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+          }`}
+        >
+          Abonnement & Formule
+        </button>
       </div>
 
       {/* Content Form Card */}
@@ -228,7 +266,7 @@ export default function SettingsPage() {
                 />
               </div>
             </>
-          ) : (
+          ) : activeTab === "billing" ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -264,27 +302,127 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-          )}
-
-          <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 rounded-xl transition-all shadow-sm min-h-[44px]"
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw className="w-4 h-4 animate-spin" />
-                  <span>Enregistrement en cours...</span>
-                </>
+          ) : (
+            <div className="space-y-6">
+              {isLoadingSub ? (
+                <div className="flex items-center justify-center py-10 text-slate-400 gap-2">
+                  <RefreshCw className="w-5 h-5 animate-spin text-emerald-600" />
+                  <span className="text-xs sm:text-sm">Chargement de votre statut...</span>
+                </div>
               ) : (
                 <>
-                  <Check className="w-4 h-4" />
-                  <span>Enregistrer les paramètres</span>
+                  <div
+                    className={`p-5 rounded-2xl border ${
+                      subData?.hasActiveSubscription
+                        ? "bg-emerald-50/60 border-emerald-200 text-slate-900"
+                        : "bg-amber-50/60 border-amber-200 text-slate-900"
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                            subData?.hasActiveSubscription
+                              ? "bg-emerald-600 text-white"
+                              : "bg-amber-600 text-white"
+                          }`}
+                        >
+                          <Calendar className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-bold text-base sm:text-lg">
+                              {subData?.hasActiveSubscription
+                                ? "Abonnement Actif"
+                                : subData?.subscription?.expiresAt
+                                ? "Abonnement Expiré"
+                                : "Aucun abonnement actif"}
+                            </h3>
+                            {subData?.subscription?.plan && (
+                              <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-white text-slate-800 border border-slate-200">
+                                {SUBSCRIPTION_PLANS[subData.subscription.plan as SubscriptionPlanId]?.name || subData.subscription.plan}
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm text-slate-600 mt-1">
+                            {subData?.hasActiveSubscription ? (
+                              <>
+                                Date de fin de l&apos;abonnement :{" "}
+                                <strong className="text-slate-900 font-bold">
+                                  {subData.subscription?.expiresAt
+                                    ? new Date(subData.subscription.expiresAt).toLocaleDateString("fr-FR", {
+                                        day: "numeric",
+                                        month: "long",
+                                        year: "numeric",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })
+                                    : "Non renseignée"}
+                                </strong>
+                              </>
+                            ) : subData?.subscription?.expiresAt ? (
+                              <>
+                                Votre formule a expiré le{" "}
+                                <strong className="text-slate-900 font-bold">
+                                  {new Date(subData.subscription.expiresAt).toLocaleDateString("fr-FR", {
+                                    day: "numeric",
+                                    month: "long",
+                                    year: "numeric",
+                                  })}
+                                </strong>
+                              </>
+                            ) : (
+                              "Activez un abonnement pour émettre des factures et encaisser vos paiements."
+                            )}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Link
+                        href="/abonnement"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shrink-0 min-h-[44px]"
+                      >
+                        <span>{subData?.hasActiveSubscription ? "Prolonger l'offre" : "Choisir une offre"}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 text-xs text-slate-600 flex items-start gap-3">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                    <div>
+                      <strong className="text-slate-800 block mb-0.5">Règlement certifié PayDunya</strong>
+                      <span>
+                        Vos paiements sont sécurisés et certifiés par PayDunya via Wave, Orange Money et carte bancaire. La durée acquise se cumule automatiquement à votre solde restant.
+                      </span>
+                    </div>
+                  </div>
                 </>
               )}
-            </button>
-          </div>
+            </div>
+          )}
+
+          {activeTab !== "subscription" && (
+            <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 text-xs sm:text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 disabled:opacity-50 rounded-xl transition-all shadow-sm min-h-[44px]"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                    <span>Enregistrement en cours...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>Enregistrer les paramètres</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
         </form>
       </div>
 

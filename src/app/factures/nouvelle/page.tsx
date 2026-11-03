@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
+  ArrowRight,
   Plus,
   Trash2,
   Building2,
@@ -13,6 +14,7 @@ import {
   ExternalLink,
   RefreshCw,
   Download,
+  Sparkles,
 } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
 import { DatePicker } from "@/components/ui/DatePicker";
@@ -94,12 +96,30 @@ export default function NewInvoicePage() {
     variant: FeedbackModalVariant;
     title: string;
     description: string;
+    confirmLabel?: string;
+    cancelLabel?: string;
+    onConfirmAction?: () => void;
   }>({
     isOpen: false,
     variant: "success",
     title: "",
     description: "",
   });
+
+  // État de l'abonnement utilisateur pour alerte préventive
+  const [subStatus, setSubStatus] = useState<{
+    hasActiveSubscription: boolean;
+    expiresAt: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    fetch("/api/abonnement/status")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data) setSubStatus(data);
+      })
+      .catch(() => {});
+  }, []);
 
   // Calcule une empreinte JSON de l'état actuel du formulaire
   const getFormSnapshot = () =>
@@ -272,6 +292,22 @@ export default function NewInvoicePage() {
         });
       } catch (err: any) {
         setIsSubmitting(false);
+        if (
+          err?.code === "SUBSCRIPTION_REQUIRED" ||
+          err?.message?.toLowerCase().includes("abonnement")
+        ) {
+          setDialogState({
+            isOpen: true,
+            variant: "confirm",
+            title: "Abonnement requis ou expiré",
+            description:
+              "Votre abonnement actuel ne vous permet pas de créer de nouvelles factures. Cliquez sur Renouveler pour activer une formule.",
+            confirmLabel: "Renouveler mon abonnement",
+            cancelLabel: "Plus tard",
+            onConfirmAction: () => router.push("/abonnement"),
+          });
+          return;
+        }
         setDialogState({
           isOpen: true,
           variant: "error",
@@ -414,6 +450,30 @@ export default function NewInvoicePage() {
           </button>
         </div>
       </div>
+
+      {/* Alerte si abonnement inactif ou expiré */}
+      {subStatus && !subStatus.hasActiveSubscription && (
+        <div className="bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0">
+              <Sparkles className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="font-bold text-xs sm:text-sm">Abonnement requis ou expiré</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Vous devez disposer d&apos;un abonnement actif pour créer et émettre de nouvelles factures.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/abonnement"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs sm:text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-sm shrink-0 min-h-[40px]"
+          >
+            <span>Renouveler mon abonnement</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+      )}
 
       {/* Main Form Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 w-full">
@@ -752,9 +812,9 @@ export default function NewInvoicePage() {
         title={dialogState.title}
         description={dialogState.description}
         closeLabel="Fermer"
-        confirmLabel="Mettre à jour"
-        cancelLabel="Annuler"
-        onConfirm={handleConfirmUpdate}
+        confirmLabel={dialogState.confirmLabel || "Mettre à jour"}
+        cancelLabel={dialogState.cancelLabel || "Annuler"}
+        onConfirm={dialogState.onConfirmAction || handleConfirmUpdate}
         isLoading={isSubmitting}
         onDownload={
           savedInvoice && dialogState.variant === "success"

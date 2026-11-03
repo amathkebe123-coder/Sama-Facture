@@ -15,6 +15,7 @@ import {
   ChevronsUpDown,
   X,
   Sparkles,
+  Zap,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -47,6 +48,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   ];
 
   const otherNavItems = [
+    { label: "Abonnement", href: "/abonnement", icon: Zap },
     { label: "Paramètres", href: "/parametres", icon: Settings },
     { label: "Centre d'aide", href: "/aide", icon: HelpCircle },
   ];

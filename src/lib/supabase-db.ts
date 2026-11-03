@@ -228,6 +228,35 @@ export async function createInvoiceInDb(
   invoiceNumber: string,
   userId?: string
 ): Promise<Invoice> {
+  // Côté navigateur : passer par la route API serveur qui vérifie obligatoirement
+  // le statut d'abonnement actif dans Supabase avant d'autoriser la création
+  if (typeof window !== "undefined") {
+    const res = await fetch("/api/factures/create", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        invoiceData: data,
+        invoiceNumber,
+      }),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      const error: any = new Error(
+        errData.message || "Erreur lors de la création de la facture."
+      );
+      if (res.status === 403 || errData.error === "SUBSCRIPTION_REQUIRED") {
+        error.code = "SUBSCRIPTION_REQUIRED";
+      }
+      throw error;
+    }
+
+    const resJson = await res.json();
+    return mapInvoiceFromRow(resJson.invoice);
+  }
+
   const insertPayload: Record<string, any> = {
     invoice_number: invoiceNumber,
     client_id: data.client.id,
