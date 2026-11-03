@@ -73,13 +73,13 @@ export async function middleware(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - images & assets (*.svg, *.png, *.jpg, *.jpeg, *.gif, *.webp)
+     * Exclure explicitement de l'exécution du middleware :
+     * - _next/static (fichiers compilés statiques : JS, CSS, media)
+     * - _next/image (optimisation d'images Next.js)
+     * - favicon.ico et icônes
+     * - tous les fichiers avec extension statique (*.css, *.js, *.svg, *.png, *.jpg, *.jpeg, *.gif, *.webp, *.ico, *.woff, *.woff2)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:css|js|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)$).*)",
   ],
 };
 
