@@ -306,10 +306,10 @@ export default function InvoiceDetailPage() {
           <div>
             <div className="flex items-center gap-2 mb-1.5">
               <div className="flex items-center justify-center w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-600 text-white font-bold text-xs shadow-sm shrink-0">
-                SF
+                YF
               </div>
               <span className="text-base sm:text-lg font-black tracking-tight text-slate-900 uppercase">
-                Sama Facture SN
+                Yomb Facture SN
               </span>
             </div>
             <p className="text-xs text-slate-500">

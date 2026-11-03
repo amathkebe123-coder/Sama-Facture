@@ -180,7 +180,7 @@ export default function ConnexionPage() {
             <Receipt className="w-6 h-6" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Sama Facture
+            Yomb Facture
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
             Facturation & Encaissements conformes au Sénégal

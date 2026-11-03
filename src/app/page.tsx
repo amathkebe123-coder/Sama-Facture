@@ -21,13 +21,13 @@ export default function LandingPage() {
       <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-100 shadow-[0_1px_3px_0_rgba(0,0,0,0.02)]">
         <div className="max-w-[1080px] mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-3">
           
-          {/* Logo Sama Facture */}
+          {/* Logo Yomb Facture */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-600 to-emerald-700 text-white flex items-center justify-center shadow-[0_2px_8px_rgba(5,150,105,0.25)] transition-transform group-hover:scale-105 shrink-0">
               <FileText className="w-5 h-5" width={20} height={20} />
             </div>
             <span className="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900">
-              Sama Facture
+              Yomb Facture
             </span>
           </Link>
 
@@ -230,7 +230,7 @@ export default function LandingPage() {
                 Prêt à simplifier votre facturation ?
               </h2>
               <p className="text-slate-400 text-sm sm:text-base max-w-lg mx-auto leading-relaxed mb-6">
-                Rejoignez les entrepreneurs et indépendants qui gagnent du temps chaque mois avec Sama Facture.
+                Rejoignez les entrepreneurs et indépendants qui gagnent du temps chaque mois avec Yomb Facture.
               </p>
               <Link
                 href="/inscription"
@@ -250,7 +250,7 @@ export default function LandingPage() {
       <footer className="bg-white border-t border-slate-100 py-7 px-4 sm:px-8 text-xs sm:text-sm text-slate-500">
         <div className="max-w-[1080px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-center sm:text-left">
           <div>
-            <strong className="text-slate-800">Sama Facture</strong> — Conçu pour les entrepreneurs du Sénégal et de la zone UEMOA.
+            <strong className="text-slate-800">Yomb Facture</strong> — Conçu pour les entrepreneurs du Sénégal et de la zone UEMOA.
           </div>
           <div className="flex items-center gap-5">
             <Link href="/connexion" className="hover:text-emerald-600 transition-colors py-1">

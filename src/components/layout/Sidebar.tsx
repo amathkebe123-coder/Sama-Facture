@@ -145,7 +145,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-bold tracking-tight text-white uppercase truncate">
-                Sama Facture
+                Yomb Facture
               </span>
               <span className="text-[10px] text-emerald-400/80 font-medium truncate">
                 Sénégal • XOF

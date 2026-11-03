@@ -7,7 +7,7 @@ import { AppShell } from "@/components/layout/AppShell";
 export default function HelpPage() {
   const faqs = [
     {
-      q: "Comment fonctionne la TVA sénégalaise à 18% sur Sama Facture ?",
+      q: "Comment fonctionne la TVA sénégalaise à 18% sur Yomb Facture ?",
       a: "Toutes les lignes de facture appliquent automatiquement le taux de TVA standard de 18% conformément au code général des impôts sénégalais. Les montants HT, TVA et TTC sont calculés avec arrondi entier.",
     },
     {

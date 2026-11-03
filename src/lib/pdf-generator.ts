@@ -122,7 +122,7 @@ function formatDate(dateStr: string): string {
 }
 
 /**
- * Génère un Blob PDF vectoriel A4 ultra-léger et certifié pour une facture Sama Facture.
+ * Génère un Blob PDF vectoriel A4 ultra-léger et certifié pour une facture Yomb Facture.
  */
 export function generateInvoicePdfBlob(
   invoice: Invoice,
@@ -432,7 +432,7 @@ export function generateInvoicePdfBlob(
     "center"
   );
   drawText(
-    `Page 1 / 1 — Document officiel généré par Sama Facture (${invoice.invoiceNumber})`,
+    `Page 1 / 1 — Document officiel généré par Yomb Facture (${invoice.invoiceNumber})`,
     pageWidth / 2,
     footY - 38,
     "/F1",

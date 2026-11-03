@@ -6,7 +6,7 @@ import type { CompanySettings } from "../../src/lib/company.ts";
 
 describe("lib/pdf-generator.ts — Génération de PDF Factures A4 Conforme", () => {
   const mockCompany: CompanySettings = {
-    companyName: "Sama Facture SN SARL",
+    companyName: "Yomb Facture SN SARL",
     ninea: "008472912 2G3",
     rccm: "SN-DKR-2024-B-1420",
     phone: "+221 77 821 45 67",
@@ -73,7 +73,7 @@ describe("lib/pdf-generator.ts — Génération de PDF Factures A4 Conforme", ()
     const blob = generateInvoicePdfBlob(mockInvoice, mockCompany);
     const latin1Text = Buffer.from(await blob.arrayBuffer()).toString("latin1");
 
-    assert.ok(latin1Text.includes("Sama Facture SN SARL"));
+    assert.ok(latin1Text.includes("Yomb Facture SN SARL"));
     assert.ok(latin1Text.includes("008472912 2G3"));
     assert.ok(latin1Text.includes("SN-DKR-2024-B-1420"));
     assert.ok(latin1Text.includes("+221 77 821 45 67"));

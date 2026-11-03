@@ -382,7 +382,7 @@ function VerificationEmailContent() {
             <Receipt className="w-6 h-6" />
           </div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900">
-            Sama Facture
+            Yomb Facture
           </h1>
           <p className="text-xs sm:text-sm text-slate-500">
             Vérification de sécurité du compte
@@ -473,7 +473,7 @@ function VerificationEmailContent() {
               ) : (
                 <>
                   <CheckCircle2 className="w-4 h-4" />
-                  <span>Confirmer et accéder à Sama Facture</span>
+                  <span>Confirmer et accéder à Yomb Facture</span>
                 </>
               )}
             </button>
