@@ -151,7 +151,7 @@ export default function InscriptionPage() {
       // Si Supabase a déjà créé la session (confirmation email désactivée)
       if (data.session) {
         console.log("[Sama Facture Inscription] Session active immédiate.");
-        router.push("/");
+        router.push("/dashboard");
         router.refresh();
         return;
       }

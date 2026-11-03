@@ -186,7 +186,7 @@ function VerificationEmailContent() {
       }
 
       setIsVerifying(false);
-      router.push("/");
+      router.push("/dashboard");
       router.refresh();
     } catch (err: any) {
       setIsVerifying(false);

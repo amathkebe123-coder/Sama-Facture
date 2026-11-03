@@ -56,7 +56,9 @@ Sama Facture/
 ├── src/
 │   ├── middleware.ts               # Protection des routes et synchronisation des cookies Supabase
 │   ├── app/                        # Pages Next.js (App Router)
-│   │   ├── page.tsx                # Dashboard principal connecté aux données réelles
+│   │   ├── page.tsx                # Landing Page publique officielle Sama Facture
+│   │   ├── dashboard/
+│   │   │   └── page.tsx            # Tableau de bord principal connecté aux données réelles
 │   │   ├── layout.tsx              # Layout racine (HTML, Body, Viewport, Providers)
 │   │   ├── globals.css             # CSS global, variables de thème et polices système
 │   │   ├── connexion/
@@ -149,8 +151,9 @@ Lorsqu'un utilisateur s'inscrit via `supabase.auth.signUp()`, la fonction trigge
 
 ### 4.3 Protection des Routes (`middleware.ts`)
 - Le middleware Next.js utilise `@supabase/ssr` avec `createServerClient` et `supabase.auth.getUser()`.
-- Toute tentative d'accès à une page protégée (`/`, `/factures`, `/clients`, `/produits`, etc.) sans session valide redirige immédiatement vers `/connexion`.
-- Un utilisateur déjà authentifié accédant à `/connexion` ou `/inscription` est automatiquement redirigé vers le tableau de bord `/`.
+- La landing page (`/`) est publique et accessible sans connexion.
+- Toute tentative d'accès à une page protégée (`/dashboard`, `/factures`, `/clients`, `/produits`, etc.) sans session valide redirige immédiatement vers `/connexion`.
+- Un utilisateur déjà authentifié accédant à `/`, `/connexion` ou `/inscription` est automatiquement redirigé vers le tableau de bord `/dashboard`.
 
 ### 4.4 Politique d'Email & Vérification Sécurisée par Code (OTP)
 - **Domaines autorisés** : Uniquement Gmail (`@gmail.com`, `@googlemail.com`), iCloud (`@icloud.com`, `@me.com`, `@mac.com`) et les emails professionnels personnalisés avec le nom de domaine de l'entreprise.

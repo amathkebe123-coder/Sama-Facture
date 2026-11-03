@@ -30,7 +30,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
   const { invoices, userProfile, signOut } = useInvoices();
 
   const mainNavItems = [
-    { label: "Vue d'ensemble", href: "/", icon: LayoutDashboard },
+    { label: "Vue d'ensemble", href: "/dashboard", icon: LayoutDashboard },
     {
       label: "Factures",
       href: "/factures",
@@ -139,7 +139,7 @@ export function Sidebar({ isOpen = false, onClose }: SidebarProps) {
 
         {/* Header / Brand */}
         <div className="relative flex items-center justify-between h-16 px-4 border-b border-[#15241C]/80 shrink-0">
-          <Link href="/" onClick={onClose} className="flex items-center gap-2.5">
+          <Link href="/dashboard" onClick={onClose} className="flex items-center gap-2.5">
             <div className="relative flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-600 to-emerald-400 shadow-[0_0_15px_rgba(16,185,129,0.4)] shrink-0">
               <Sparkles className="w-4 h-4 text-white" />
             </div>

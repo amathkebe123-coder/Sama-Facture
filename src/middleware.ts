@@ -39,8 +39,9 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Pages d'authentification et routes API publiques
+  // Pages publiques : landing page ("/"), authentification et routes API
   const isPublicRoute =
+    pathname === "/" ||
     pathname === "/connexion" ||
     pathname === "/inscription" ||
     pathname === "/verification-email" ||
@@ -49,17 +50,20 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/auth") ||
     pathname.startsWith("/api");
 
-  // 1. Rediriger les anonymes vers la page de connexion
+  // 1. Rediriger les utilisateurs non connectés vers la page de connexion pour toute page protégée
   if (!user && !isPublicRoute) {
     const url = request.nextUrl.clone();
     url.pathname = "/connexion";
     return NextResponse.redirect(url);
   }
 
-  // 2. Rediriger un utilisateur déjà connecté qui tente d'aller sur connexion/inscription
-  if (user && isPublicRoute && !pathname.startsWith("/auth/callback") && !pathname.startsWith("/api")) {
+  // 2. Rediriger un utilisateur déjà connecté qui ouvre la landing page ("/") ou les pages d'auth vers le dashboard
+  if (
+    user &&
+    (pathname === "/" || pathname === "/connexion" || pathname === "/inscription")
+  ) {
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/dashboard";
     return NextResponse.redirect(url);
   }
 
