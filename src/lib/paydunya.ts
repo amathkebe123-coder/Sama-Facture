@@ -40,9 +40,9 @@ export function getPayDunyaBaseUrl(): string {
  * En-têtes HTTP requis par PayDunya
  */
 function getPayDunyaHeaders(): Record<string, string> {
-  const masterKey = process.env.PAYDUNYA_MASTER_KEY || "";
-  const privateKey = process.env.PAYDUNYA_PRIVATE_KEY || "";
-  const token = process.env.PAYDUNYA_TOKEN || "";
+  const masterKey = (process.env.PAYDUNYA_MASTER_KEY || "").trim();
+  const privateKey = (process.env.PAYDUNYA_PRIVATE_KEY || "").trim();
+  const token = (process.env.PAYDUNYA_TOKEN || "").trim();
 
   if (!masterKey || !privateKey || !token) {
     throw new Error("Clés d'API PayDunya manquantes dans les variables d'environnement.");
@@ -50,6 +50,8 @@ function getPayDunyaHeaders(): Record<string, string> {
 
   return {
     "Content-Type": "application/json",
+    "Accept": "application/json",
+    "User-Agent": "YombFacture/1.0",
     "PAYDUNYA-MASTER-KEY": masterKey,
     "PAYDUNYA-PRIVATE-KEY": privateKey,
     "PAYDUNYA-TOKEN": token,
@@ -89,15 +91,55 @@ export async function createPayDunyaInvoice(
     body: JSON.stringify(body),
   });
 
-  if (!response.ok) {
-    const errorText = await response.text();
+  const status = response.status;
+  const contentType = response.headers.get("content-type") || "";
+  const cfRay = response.headers.get("cf-ray") || undefined;
+  const isJson = contentType.toLowerCase().includes("application/json");
+
+  // 1. Si la réponse n'est pas du JSON (ex. page HTML Cloudflare)
+  if (!isJson) {
+    console.warn("[PAYDUNYA] Réponse non-JSON reçue:", {
+      status,
+      contentType,
+      ...(cfRay ? { cfRay } : {}),
+    });
     return {
       success: false,
-      message: `Erreur API PayDunya (${response.status}): ${errorText}`,
+      message: "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
     };
   }
 
-  const data = await response.json();
+  // 2. Lecture sécurisée du JSON
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    console.warn("[PAYDUNYA] Échec parsing JSON:", {
+      status,
+      contentType,
+      ...(cfRay ? { cfRay } : {}),
+    });
+    return {
+      success: false,
+      message: "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
+    };
+  }
+
+  if (!response.ok) {
+    console.warn("[PAYDUNYA] Réponse HTTP en erreur:", {
+      status,
+      contentType,
+      ...(cfRay ? { cfRay } : {}),
+    });
+    return {
+      success: false,
+      message:
+        data.response_text ||
+        data.description ||
+        data.message ||
+        "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
+    };
+  }
 
   // PayDunya renvoie response_code: "00" en cas de succès avec token et response_text ou response_url
   const paymentUrl = data.response_text || data.response_url;
@@ -111,7 +153,11 @@ export async function createPayDunyaInvoice(
 
   return {
     success: false,
-    message: data.response_text || data.description || "Échec de création de la facture PayDunya",
+    message:
+      data.response_text ||
+      data.description ||
+      data.message ||
+      "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
   };
 }
 
@@ -129,25 +175,63 @@ export async function confirmPayDunyaInvoice(
     headers,
   });
 
-  if (!response.ok) {
-    const errText = await response.text();
+  const status = response.status;
+  const contentType = response.headers.get("content-type") || "";
+  const cfRay = response.headers.get("cf-ray") || undefined;
+  const isJson = contentType.toLowerCase().includes("application/json");
+
+  if (!isJson) {
+    console.warn("[PAYDUNYA] Confirmation: réponse non-JSON reçue:", {
+      status,
+      contentType,
+      ...(cfRay ? { cfRay } : {}),
+    });
     return {
       success: false,
-      message: `Erreur confirmation PayDunya (${response.status}): ${errText}`,
+      message: "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
     };
   }
 
-  const data = await response.json();
+  let data: any;
+  try {
+    data = await response.json();
+  } catch {
+    console.warn("[PAYDUNYA] Confirmation: échec parsing JSON:", {
+      status,
+      contentType,
+      ...(cfRay ? { cfRay } : {}),
+    });
+    return {
+      success: false,
+      message: "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
+    };
+  }
+
+  if (!response.ok) {
+    console.warn("[PAYDUNYA] Confirmation: HTTP en erreur:", {
+      status,
+      contentType,
+      ...(cfRay ? { cfRay } : {}),
+    });
+    return {
+      success: false,
+      message:
+        data.response_text ||
+        data.message ||
+        data.description ||
+        "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.",
+    };
+  }
 
   // Dans la réponse PayDunya :
   // data.status peut être 'completed', 'cancelled', 'failed', 'pending'
   // data.invoice contient total_amount, token, etc.
-  const status = (data.status || "").toLowerCase();
+  const invoiceStatus = (data.status || "").toLowerCase();
   const amount = Number(data.invoice?.total_amount ?? data.total_amount ?? 0);
 
   return {
-    success: data.response_code === "00" || status === "completed",
-    status,
+    success: data.response_code === "00" || invoiceStatus === "completed",
+    status: invoiceStatus,
     invoiceToken: data.invoice?.token || token,
     amount,
     raw: data,
@@ -158,7 +242,7 @@ export async function confirmPayDunyaInvoice(
  * Calcule le hash SHA-512 de la clé principale PAYDUNYA_MASTER_KEY
  */
 export function computePayDunyaMasterHash(): string {
-  const masterKey = process.env.PAYDUNYA_MASTER_KEY || "";
+  const masterKey = (process.env.PAYDUNYA_MASTER_KEY || "").trim();
   return crypto.createHash("sha512").update(masterKey).digest("hex");
 }
 
@@ -170,7 +254,7 @@ export function verifyPayDunyaHash(receivedHash: string | undefined | null, toke
   if (!receivedHash || typeof receivedHash !== "string") {
     return false;
   }
-  const masterKey = process.env.PAYDUNYA_MASTER_KEY || "";
+  const masterKey = (process.env.PAYDUNYA_MASTER_KEY || "").trim();
   if (!masterKey) {
     return false;
   }

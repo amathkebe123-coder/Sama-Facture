@@ -78,10 +78,14 @@ export async function POST(request: NextRequest) {
 
     if (!paydunyaRes.success || !paydunyaRes.token || !paydunyaRes.url) {
       console.error("[PAIEMENT] Échec de l'initialisation PayDunya:", paydunyaRes.message);
+      const safeMessage =
+        paydunyaRes.message && !paydunyaRes.message.includes("<")
+          ? paydunyaRes.message
+          : "Le paiement est momentanément indisponible. Réessaie dans quelques minutes.";
       return NextResponse.json(
         {
           error: "PAYDUNYA_ERROR",
-          message: paydunyaRes.message || "Impossible d'initialiser le paiement avec PayDunya.",
+          message: safeMessage,
         },
         { status: 502 }
       );
