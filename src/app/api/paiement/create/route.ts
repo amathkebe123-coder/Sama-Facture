@@ -3,8 +3,21 @@ import { createServerSupabaseClient, createAdminSupabaseClient } from "@/lib/sup
 import { SUBSCRIPTION_PLANS, isValidPlanId } from "@/lib/subscription-plans";
 import { createPayDunyaInvoice } from "@/lib/paydunya";
 
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
+
 export async function POST(request: NextRequest) {
   try {
+    // Diagnostic temporaire côté serveur (logs Vercel uniquement, valeurs et longueurs jamais affichées)
+    console.log("[DIAGNOSTIC /api/paiement/create]", {
+      APP_URL: Boolean(process.env.APP_URL),
+      PAYDUNYA_MASTER_KEY: Boolean(process.env.PAYDUNYA_MASTER_KEY),
+      PAYDUNYA_PRIVATE_KEY: Boolean(process.env.PAYDUNYA_PRIVATE_KEY),
+      PAYDUNYA_TOKEN: Boolean(process.env.PAYDUNYA_TOKEN),
+      PAYDUNYA_MODE: Boolean(process.env.PAYDUNYA_MODE),
+      SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    });
+
     // 1. Vérification de l'authentification utilisateur via cookies serveur
     const supabase = createServerSupabaseClient();
     const {
@@ -39,7 +52,7 @@ export async function POST(request: NextRequest) {
     const description = `Abonnement Yomb Facture - ${planConfig.name} (${planConfig.durationLabel})`;
 
     // 4. Configuration des adresses de redirection et de rappel
-    const appUrl = (process.env.APP_URL || "").trim().replace(/\/$/, "");
+    const appUrl = (process.env.APP_URL ?? "").trim().replace(/\/$/, "");
     if (!appUrl) {
       return NextResponse.json(
         { error: "CONFIG_ERROR", message: "La variable APP_URL n'est pas configurée côté serveur." },
@@ -100,4 +113,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
