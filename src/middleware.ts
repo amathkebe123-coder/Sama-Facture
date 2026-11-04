@@ -39,9 +39,12 @@ export async function middleware(request: NextRequest) {
 
   const pathname = request.nextUrl.pathname;
 
-  // Pages publiques : landing page ("/"), authentification et routes API
+  // Pages publiques : landing page ("/"), robots, sitemap, aide, authentification et routes API
   const isPublicRoute =
     pathname === "/" ||
+    pathname === "/robots.txt" ||
+    pathname === "/sitemap.xml" ||
+    pathname === "/aide" ||
     pathname === "/connexion" ||
     pathname === "/inscription" ||
     pathname === "/verification-email" ||
@@ -77,9 +80,9 @@ export const config = {
      * - _next/static (fichiers compilés statiques : JS, CSS, media)
      * - _next/image (optimisation d'images Next.js)
      * - favicon.ico et icônes
-     * - tous les fichiers avec extension statique (*.css, *.js, *.svg, *.png, *.jpg, *.jpeg, *.gif, *.webp, *.ico, *.woff, *.woff2)
+     * - tous les fichiers avec extension statique (*.css, *.js, *.svg, *.png, *.jpg, *.jpeg, *.gif, *.webp, *.ico, *.woff, *.woff2, *.txt, *.xml)
      */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:css|js|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:css|js|svg|png|jpg|jpeg|gif|webp|ico|woff|woff2|txt|xml)$).*)",
   ],
 };
 
