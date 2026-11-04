@@ -8,17 +8,17 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    // Diagnostic temporaire côté serveur (logs Vercel uniquement, valeurs et longueurs jamais affichées)
-    console.log("[DIAGNOSTIC /api/paiement/create]", {
-      APP_URL: Boolean(process.env.APP_URL),
-      PAYDUNYA_MASTER_KEY: Boolean(process.env.PAYDUNYA_MASTER_KEY),
-      PAYDUNYA_PRIVATE_KEY: Boolean(process.env.PAYDUNYA_PRIVATE_KEY),
-      PAYDUNYA_TOKEN: Boolean(process.env.PAYDUNYA_TOKEN),
-      PAYDUNYA_MODE: Boolean(process.env.PAYDUNYA_MODE),
-      SUPABASE_SERVICE_ROLE_KEY: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+    // 1. Diagnostic serveur (booléens uniquement, jamais de valeurs ni longueurs)
+    console.log("[PAIEMENT] Démarrage initialisation paiement d'abonnement", {
+      hasAppUrl: Boolean(process.env.APP_URL),
+      hasMasterKey: Boolean(process.env.PAYDUNYA_MASTER_KEY),
+      hasPrivateKey: Boolean(process.env.PAYDUNYA_PRIVATE_KEY),
+      hasToken: Boolean(process.env.PAYDUNYA_TOKEN),
+      hasServiceRole: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      mode: (process.env.PAYDUNYA_MODE || "test").trim().toLowerCase(),
     });
 
-    // 1. Vérification de l'authentification utilisateur via cookies serveur
+    // 2. Vérification de l'authentification utilisateur via cookies serveur
     const supabase = createServerSupabaseClient();
     const {
       data: { user },
@@ -26,17 +26,21 @@ export async function POST(request: NextRequest) {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
+      console.warn("[PAIEMENT] Tentative d'accès non authentifié.");
       return NextResponse.json(
         { error: "UNAUTHORIZED", message: "Vous devez être connecté pour souscrire un abonnement." },
         { status: 401 }
       );
     }
 
-    // 2. Lecture et validation stricte du code de l'offre
+    console.log("[PAIEMENT] Session utilisateur validée.");
+
+    // 3. Lecture et validation stricte du code de l'offre
     const body = await request.json().catch(() => ({}));
     const { plan } = body;
 
     if (!isValidPlanId(plan)) {
+      console.warn("[PAIEMENT] Identifiant d'offre invalide reçu:", plan);
       return NextResponse.json(
         {
           error: "INVALID_PLAN",
@@ -46,25 +50,24 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 3. Récupération du prix et du libellé depuis la constante serveur unique
+    // 4. Récupération du prix et du libellé depuis la constante serveur unique
     const planConfig = SUBSCRIPTION_PLANS[plan];
     const amount = planConfig.amount;
     const description = `Abonnement Yomb Facture - ${planConfig.name} (${planConfig.durationLabel})`;
 
-    // 4. Configuration des adresses de redirection et de rappel
-    const appUrl = (process.env.APP_URL ?? "").trim().replace(/\/$/, "");
-    if (!appUrl) {
-      return NextResponse.json(
-        { error: "CONFIG_ERROR", message: "La variable APP_URL n'est pas configurée côté serveur." },
-        { status: 500 }
-      );
-    }
+    console.log(`[PAIEMENT] Offre sélectionnée: ${plan} (${amount} FCFA). Préparation des URLs...`);
+
+    // 5. Configuration des adresses de redirection et de rappel (utilise APP_URL sinon fallback production)
+    const appUrl = (process.env.APP_URL || "https://sama-facture-one.vercel.app")
+      .trim()
+      .replace(/\/$/, "");
 
     const returnUrl = `${appUrl}/abonnement/retour`;
     const cancelUrl = `${appUrl}/abonnement`;
     const callbackUrl = `${appUrl}/api/paiement/callback`;
 
-    // 5. Création de la facture PayDunya (PAR)
+    // 6. Création de la facture PayDunya (PAR)
+    console.log("[PAIEMENT] Appel de l'API PayDunya pour génération du lien de paiement...");
     const paydunyaRes = await createPayDunyaInvoice({
       totalAmount: amount,
       description,
@@ -74,6 +77,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!paydunyaRes.success || !paydunyaRes.token || !paydunyaRes.url) {
+      console.error("[PAIEMENT] Échec de l'initialisation PayDunya:", paydunyaRes.message);
       return NextResponse.json(
         {
           error: "PAYDUNYA_ERROR",
@@ -83,7 +87,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 6. Enregistrement dans subscription_payments avec status = 'pending'
+    console.log("[PAIEMENT] Facture PayDunya créée avec succès. Enregistrement en base de données...");
+
+    // 7. Enregistrement dans subscription_payments avec status = 'pending'
     const adminSupabase = createAdminSupabaseClient();
     const { error: dbError } = await adminSupabase.from("subscription_payments").insert({
       user_id: user.id,
@@ -94,21 +100,23 @@ export async function POST(request: NextRequest) {
     });
 
     if (dbError) {
-      console.error("Erreur enregistrement subscription_payments:", dbError.message);
+      console.error("[PAIEMENT] Erreur enregistrement subscription_payments:", dbError.message);
       return NextResponse.json(
         { error: "DB_ERROR", message: "Erreur lors de l'enregistrement de la transaction." },
         { status: 500 }
       );
     }
 
-    // 7. Renvoi strict de l'URL de paiement uniquement (aucun secret ni token exposé)
+    console.log("[PAIEMENT] Transaction enregistrée avec succès (statut pending). Redirection vers PayDunya.");
+
+    // 8. Renvoi strict de l'URL de paiement uniquement (aucun secret ni token exposé)
     return NextResponse.json({
       url: paydunyaRes.url,
     });
   } catch (err: any) {
-    console.error("Exception /api/paiement/create:", err?.message || err);
+    console.error("[PAIEMENT] Exception lors de l'initialisation:", err?.message || err);
     return NextResponse.json(
-      { error: "SERVER_ERROR", message: "Une erreur interne est survenue." },
+      { error: "SERVER_ERROR", message: "Une erreur interne est survenue lors de l'initialisation du paiement." },
       { status: 500 }
     );
   }

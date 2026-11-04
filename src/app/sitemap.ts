@@ -1,7 +1,7 @@
 import { MetadataRoute } from "next";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = (process.env.APP_URL || "https://sama-facture-reh1.vercel.app")
+  const baseUrl = (process.env.APP_URL || "https://sama-facture-one.vercel.app")
     .trim()
     .replace(/\/$/, "");
 

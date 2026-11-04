@@ -64,7 +64,7 @@ export async function createPayDunyaInvoice(
 ): Promise<PayDunyaCreateInvoiceResponse> {
   const baseUrl = getPayDunyaBaseUrl();
   const headers = getPayDunyaHeaders();
-  const appUrl = (process.env.APP_URL || "").trim().replace(/\/$/, "");
+  const appUrl = (process.env.APP_URL || "https://sama-facture-one.vercel.app").trim().replace(/\/$/, "");
 
   const body = {
     invoice: {
@@ -99,18 +99,19 @@ export async function createPayDunyaInvoice(
 
   const data = await response.json();
 
-  // PayDunya renvoie response_code: "00" en cas de succès avec token et response_text (l'URL)
-  if (data.response_code === "00") {
+  // PayDunya renvoie response_code: "00" en cas de succès avec token et response_text ou response_url
+  const paymentUrl = data.response_text || data.response_url;
+  if (data.response_code === "00" && data.token && paymentUrl) {
     return {
       success: true,
       token: data.token,
-      url: data.response_text,
+      url: paymentUrl,
     };
   }
 
   return {
     success: false,
-    message: data.response_text || "Échec de création de la facture PayDunya",
+    message: data.response_text || data.description || "Échec de création de la facture PayDunya",
   };
 }
 
@@ -142,10 +143,10 @@ export async function confirmPayDunyaInvoice(
   // data.status peut être 'completed', 'cancelled', 'failed', 'pending'
   // data.invoice contient total_amount, token, etc.
   const status = (data.status || "").toLowerCase();
-  const amount = Number(data.invoice?.total_amount || data.total_amount || 0);
+  const amount = Number(data.invoice?.total_amount ?? data.total_amount ?? 0);
 
   return {
-    success: true,
+    success: data.response_code === "00" || status === "completed",
     status,
     invoiceToken: data.invoice?.token || token,
     amount,
@@ -163,20 +164,41 @@ export function computePayDunyaMasterHash(): string {
 
 /**
  * Vérifie que le hash reçu dans l'IPN correspond au SHA-512 de PAYDUNYA_MASTER_KEY
+ * (supporte également la variante sha512(masterKey + token))
  */
-export function verifyPayDunyaHash(receivedHash: string | undefined | null): boolean {
+export function verifyPayDunyaHash(receivedHash: string | undefined | null, token?: string): boolean {
   if (!receivedHash || typeof receivedHash !== "string") {
     return false;
   }
-  const expectedHash = computePayDunyaMasterHash();
-  // Comparaison à temps constant pour éviter les timing attacks
-  const expectedBuffer = Buffer.from(expectedHash, "utf8");
-  const receivedBuffer = Buffer.from(receivedHash.trim().toLowerCase(), "utf8");
-
-  if (expectedBuffer.length !== receivedBuffer.length) {
+  const masterKey = process.env.PAYDUNYA_MASTER_KEY || "";
+  if (!masterKey) {
     return false;
   }
 
-  return crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+  const compare = (a: string, b: string) => {
+    try {
+      const bufA = Buffer.from(a.trim().toLowerCase(), "utf8");
+      const bufB = Buffer.from(b.trim().toLowerCase(), "utf8");
+      if (bufA.length !== bufB.length) return false;
+      return crypto.timingSafeEqual(bufA, bufB);
+    } catch {
+      return false;
+    }
+  };
+
+  const expectedHash = computePayDunyaMasterHash();
+  if (compare(receivedHash, expectedHash)) {
+    return true;
+  }
+
+  // Variante avec token si fourni
+  if (token) {
+    const expectedWithToken = crypto.createHash("sha512").update(masterKey + token).digest("hex");
+    if (compare(receivedHash, expectedWithToken)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 

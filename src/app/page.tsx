@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 
 const siteUrl = (
-  process.env.APP_URL || "https://sama-facture-reh1.vercel.app"
+  process.env.APP_URL || "https://sama-facture-one.vercel.app"
 )
   .trim()
   .replace(/\/$/, "");
